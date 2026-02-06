@@ -58,5 +58,34 @@ add_custom_target(minimal-rpi ALL DEPENDS ${RPI_IMG})
 add_custom_target(minimal DEPENDS minimal-virt minimal-rpi)
 
 if(BUILD_TESTING)
+  option(CHARCOALOS_FETCH_UNITY
+         "Automatically fetch Unity from official sources when not found locally"
+         ON)
+  set(UNITY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/unity" CACHE PATH
+      "Path to a Unity checkout (expects src/unity.h and src/unity.c)")
+
+  set(UNITY_RESOLVED_SOURCE_DIR "")
+  if(EXISTS "${UNITY_SOURCE_DIR}/src/unity.h" AND EXISTS "${UNITY_SOURCE_DIR}/src/unity.c")
+    set(UNITY_RESOLVED_SOURCE_DIR "${UNITY_SOURCE_DIR}")
+  elseif(CHARCOALOS_FETCH_UNITY)
+    include(FetchContent)
+    FetchContent_Declare(
+      unity_upstream
+      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+      GIT_TAG master
+      GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(unity_upstream)
+    set(UNITY_RESOLVED_SOURCE_DIR "${unity_upstream_SOURCE_DIR}")
+  endif()
+
+  if(UNITY_RESOLVED_SOURCE_DIR)
+    add_library(unity INTERFACE)
+    target_include_directories(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src")
+    target_sources(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c")
+  else()
+    message(STATUS
+            "Unity not found at ${UNITY_SOURCE_DIR}; set CHARCOALOS_FETCH_UNITY=ON to auto-fetch it")
+  endif()
+
   add_subdirectory(tests)
 endif()
