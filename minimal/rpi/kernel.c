@@ -1,3 +1,6 @@
+// Distributed under the MIT license.
+// See LICENSE.txt for details.
+
 // Build
 // aarch64-elf-as boot.s -o boot.o
 // aarch64-elf-gcc -ffreestanding -fno-builtin -nostdlib -c kernel.c -o kernel.o
@@ -8,27 +11,29 @@
 
 #include <stdint.h>
 
-#define MMIO_BASE    0xFE000000UL
-#define UART0_BASE   (MMIO_BASE + 0x201000UL) // Pi 4 UART0 (PL011) base
-#define UART0_DR     (*(volatile uint32_t *)(UART0_BASE + 0x00)) // TX ("data register")
-#define UART0_FR     (*(volatile uint32_t *)(UART0_BASE + 0x18)) // Status ("flag register")
+#define MMIO_BASE 0xFE000000UL
+#define UART0_BASE (MMIO_BASE + 0x201000UL)  // Pi 4 UART0 (PL011) base
+#define UART0_DR \
+  (*(volatile uint32_t *)(UART0_BASE + 0x00))  // TX ("data register")
+#define UART0_FR \
+  (*(volatile uint32_t *)(UART0_BASE + 0x18))  // Status ("flag register")
 
 // volatile: do not optimize away or cache with repeated reads
 //           don't reorder vs other volatile accesses
 //           basically stops compiler from optimizing stuff away
 // static: only this file can see it
 // const after *: pointer address is constant
-static volatile uint8_t * const uart = (uint8_t *) 0x09000000;
+static volatile uint8_t *const uart = (uint8_t *)0x09000000;
 
 static inline void uart_putchar(char character) {
   // if bit 5 of UART0_FR is high, the FIFO for UART is full, so wait
   while (UART0_FR & (1u << 5)) {
     // wait until UART0_FR's 5th bit is not 1
   }
-  UART0_DR = (uint32_t)character; // write one character to uart_tx
+  UART0_DR = (uint32_t)character;  // write one character to uart_tx
 }
 
-static void uart_print(const char* text) {
+static void uart_print(const char *text) {
   while (*text != '\0') {
     // Continue untl reaching string null terminator
     // Note: we're assuming the characters can be put quickly, and whatever
@@ -50,6 +55,6 @@ void kmain(void) {
   // wfe = wait for next event in arm64 assembly
   // __asm__ embeds assembly
   for (;;) {
-    __asm__ volatile ("wfe");
+    __asm__ volatile("wfe");
   }
 }

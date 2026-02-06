@@ -1,3 +1,6 @@
+/* Distributed under the MIT license. */
+/* See LICENSE.txt for details. */
+
 ENTRY(_start) /* set entry point to global symbol _start */
 SECTIONS {
   . = 0x40100000;

@@ -1,3 +1,6 @@
+// Distributed under the MIT license.
+// See LICENSE.txt for details.
+
 	.global _start       // Sets entry point of the code
 _start:
 	ldr x0, =stack_top   // load register x0; =stack_top supplied somehow?

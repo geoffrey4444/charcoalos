@@ -1,0 +1,12 @@
+# Distributed under the MIT license.
+# See LICENSE.txt for details.
+
+BasedOnStyle: Google
+Language: Cpp
+Standard: Latest
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 80
+PointerAlignment: Left
+SortIncludes: false

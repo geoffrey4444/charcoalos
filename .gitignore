@@ -1,0 +1,30 @@
+# Distributed under the MIT license.
+# See LICENSE.txt for details.
+
+# macOS / editor noise
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Root build directories (e.g. build, build-debug, build-clang)
+/build*/
+
+# CMake artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+compile_commands.json
+cmake-build-*/
+
+# Toolchain and kernel build outputs
+*.o
+*.a
+*.elf
+*.img
+*.bin
+*.map
+*.lst
+*.dis

@@ -1,3 +1,6 @@
+// Distributed under the MIT license.
+// See LICENSE.txt for details.
+
         .section .text.boot
 	.global _start       // Sets entry point of the code
 _start:

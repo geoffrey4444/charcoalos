@@ -1,3 +1,6 @@
+/* Distributed under the MIT license. */
+/* See LICENSE.txt for details. */
+
 ENTRY(_start)                    /* set the entry point of the program */
 SECTIONS {
   . = 0x80000;                   /* Raspberry Pi convention: kernel starts at */

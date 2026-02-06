@@ -1,10 +1,14 @@
+// Distributed under the MIT license.
+// See LICENSE.txt for details.
+
 // Build
 // aarch64-elf-as boot.s -o boot.o
 // aarach64-elf-gcc -ffreestanding -c kernel.c -o kernel.o
 // aarch64-elf-ld -nostdlib -Tlinker.ld boot.o kernel.o -o kernel.elf
 // Run
-// qemu-system-aarch64 -machine virt,accel=hvf -cpu host -m 512M -nographic -serial mon:stdio -kernel kernel.elf
-// While running: CTRL-A x exits, CTRL-A c switches, CTRL-A h help
+// qemu-system-aarch64 -machine virt,accel=hvf -cpu host -m 512M -nographic
+// -serial mon:stdio -kernel kernel.elf While running: CTRL-A x exits, CTRL-A c
+// switches, CTRL-A h help
 //   mon is qemu monitor, --serial mon:stdio sets uart to stdio with monitor
 // DTB = device table, bare metal boot puts it at start of RAM
 // Examine with aarch64-elf-objdump
@@ -16,10 +20,10 @@
 //           basically stops compiler from optimizing stuff away
 // static: only this file can see it
 // const after *: pointer address is constant
-static volatile uint8_t * const uart = (uint8_t *) 0x09000000;
+static volatile uint8_t* const uart = (uint8_t*)0x09000000;
 
 void uart_putchar(char character) {
-  *uart = (uint8_t)character; // write one character to uart_tx
+  *uart = (uint8_t)character;  // write one character to uart_tx
 }
 
 void uart_print(const char* text) {
@@ -32,6 +36,4 @@ void uart_print(const char* text) {
   }
 }
 
-void kmain(void) {
-  uart_print("Hello, world!\r\n");
-}
+void kmain(void) { uart_print("Hello, world!\r\n"); }
