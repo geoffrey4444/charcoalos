@@ -18,6 +18,7 @@ find_program(AARCH64_AS NAMES ${AARCH64_TOOLCHAIN_PREFIX}as REQUIRED)
 find_program(AARCH64_GCC NAMES ${AARCH64_TOOLCHAIN_PREFIX}gcc REQUIRED)
 find_program(AARCH64_LD NAMES ${AARCH64_TOOLCHAIN_PREFIX}ld REQUIRED)
 find_program(AARCH64_OBJCOPY NAMES ${AARCH64_TOOLCHAIN_PREFIX}objcopy REQUIRED)
+find_program(QEMU_SYSTEM_AARCH64 NAMES qemu-system-aarch64)
 
 set(VIRT_SRC_DIR ${CMAKE_SOURCE_DIR}/minimal/virt)
 set(VIRT_BUILD_DIR ${CMAKE_BINARY_DIR}/minimal/virt)
@@ -35,6 +36,41 @@ add_custom_command(
   VERBATIM)
 
 add_custom_target(minimal-virt ALL DEPENDS ${VIRT_ELF})
+
+set(VIRT_QEMU_MACHINE "virt,accel=hvf" CACHE STRING
+    "QEMU machine argument for running minimal-virt")
+set(VIRT_QEMU_CPU "host" CACHE STRING
+    "QEMU cpu argument for running minimal-virt")
+set(VIRT_QEMU_MEMORY "512M" CACHE STRING
+    "QEMU memory argument for running minimal-virt")
+set(VIRT_QEMU_NOGRAPHIC ON CACHE BOOL
+    "Use -nographic when running minimal-virt")
+set(VIRT_QEMU_SERIAL_MON_STDIO ON CACHE BOOL
+    "Use -serial mon:stdio when running minimal-virt")
+
+if(QEMU_SYSTEM_AARCH64)
+  set(VIRT_QEMU_RUN_ARGS
+      -machine ${VIRT_QEMU_MACHINE}
+      -cpu ${VIRT_QEMU_CPU}
+      -m ${VIRT_QEMU_MEMORY}
+      -kernel ${VIRT_ELF})
+  if(VIRT_QEMU_NOGRAPHIC)
+    list(APPEND VIRT_QEMU_RUN_ARGS -nographic)
+  endif()
+  if(VIRT_QEMU_SERIAL_MON_STDIO)
+    list(APPEND VIRT_QEMU_RUN_ARGS -serial mon:stdio)
+  endif()
+
+  add_custom_target(
+    run-minimal-virt
+    COMMAND ${QEMU_SYSTEM_AARCH64} ${VIRT_QEMU_RUN_ARGS}
+    DEPENDS minimal-virt
+    USES_TERMINAL
+    COMMENT "Run minimal-virt in QEMU")
+else()
+  message(STATUS
+          "qemu-system-aarch64 not found; run-minimal-virt target will not be available")
+endif()
 
 set(RPI_SRC_DIR ${CMAKE_SOURCE_DIR}/minimal/rpi)
 set(RPI_BUILD_DIR ${CMAKE_BINARY_DIR}/minimal/rpi)
@@ -79,9 +115,13 @@ if(BUILD_TESTING)
   endif()
 
   if(UNITY_RESOLVED_SOURCE_DIR)
-    add_library(unity INTERFACE)
-    target_include_directories(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src")
-    target_sources(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c")
+    if(TARGET unity)
+      message(STATUS "Using Unity target provided by upstream CMake")
+    else()
+      add_library(unity INTERFACE)
+      target_include_directories(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src")
+      target_sources(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c")
+    endif()
   else()
     message(STATUS
             "Unity not found at ${UNITY_SOURCE_DIR}; set CHARCOALOS_FETCH_UNITY=ON to auto-fetch it")

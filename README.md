@@ -12,3 +12,10 @@ Starting from a minimal "hello world" kernel that runs either in [QEMU](https://
 - [CMake](https://cmake.org)
 - AArch64 cross compiler and linker (for example, `aarch64-elf-gcc` and `aarch64-elf-ld`)
 - [QEMU](https://www.qemu.org) (to run/test the `minimal/virt` target)
+
+## Running `minimal/virt` with CMake
+- Configure/build:
+  - `cmake -S . -B build`
+  - `cmake --build build --target run-minimal-virt`
+- The `run-minimal-virt` target builds `minimal-virt` first, then runs QEMU with defaults equivalent to:
+  - `qemu-system-aarch64 -machine virt,accel=hvf -cpu host -m 512M -nographic -serial mon:stdio -kernel <build>/minimal/virt/kernel.elf`
