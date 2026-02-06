@@ -3,10 +3,6 @@
 // aarch64-elf-gcc -ffreestanding -fno-builtin -nostdlib -c kernel.c -o kernel.o
 // aarch64-elf-ld -nostdlib -Tlinker.ld boot.o kernel.o -o kernel.elf
 // aarch64-elf-objcopy -O binary kernel.elf kernel8.img
-// Run
-// qemu-system-aarch64 -machine virt,accel=hvf -cpu host -m 512M -nographic -serial mon:stdio -kernel kernel.elf
-// While running: CTRL-A x exits, CTRL-A c switches, CTRL-A h help
-//   mon is qemu monitor, --serial mon:stdio sets uart to stdio with monitor
 // DTB = device table, bare metal boot puts it at start of RAM
 // Examine with aarch64-elf-objdump
 
