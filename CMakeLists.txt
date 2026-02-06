@@ -9,6 +9,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 endif()
 
 project(charcoalos LANGUAGES NONE)
+include(CTest)
 
 set(AARCH64_TOOLCHAIN_PREFIX "aarch64-elf-" CACHE STRING
     "Prefix for the AArch64 bare-metal cross toolchain")
@@ -55,3 +56,7 @@ add_custom_command(
 add_custom_target(minimal-rpi ALL DEPENDS ${RPI_IMG})
 
 add_custom_target(minimal DEPENDS minimal-virt minimal-rpi)
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

@@ -30,6 +30,10 @@ This repository is for learning kernel development on AArch64 by building small,
 - Keep examples small and focused on one concept at a time.
 - When adding new experiments, isolate by target directory and keep boot/linker/kernel files close together.
 
+## Testing Layout
+- `tests/Unit`: unit tests.
+- `tests/Helpers`: shared test utilities (for example, fake UART helpers and test scripts).
+
 ## Planned Layout Refactor
 - Current state: two separate minimal kernels in `minimal/virt` and `minimal/rpi`.
 - Planned direction (not implemented yet):
