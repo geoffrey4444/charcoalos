@@ -55,35 +55,54 @@ set_tests_properties(symbols-refactored-rpi-elf PROPERTIES DEPENDS refactored-rp
 
 find_program(HOST_CC NAMES clang cc gcc)
 if(HOST_CC AND UNITY_RESOLVED_SOURCE_DIR)
-  set(CONSOLE_NEWLINE_TEST_BIN ${CMAKE_CURRENT_BINARY_DIR}/console_newline_test)
-  add_custom_command(
-    OUTPUT ${CONSOLE_NEWLINE_TEST_BIN}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}
-    COMMAND ${HOST_CC}
-            -std=c11
-            -Wall
-            -Wextra
-            -I${CMAKE_SOURCE_DIR}
-            -I${UNITY_RESOLVED_SOURCE_DIR}/src
-            ${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c
-            ${CMAKE_SOURCE_DIR}/tests/Unit/ConsoleNewlineTest.c
-            ${CMAKE_SOURCE_DIR}/kernel/Console/IO.c
-            -o ${CONSOLE_NEWLINE_TEST_BIN}
-    DEPENDS
-      ${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c
-      ${UNITY_RESOLVED_SOURCE_DIR}/src/unity.h
-      ${CMAKE_SOURCE_DIR}/tests/Unit/ConsoleNewlineTest.c
-      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.c
-      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
-      ${CMAKE_SOURCE_DIR}/platform/IO.h
-    VERBATIM)
-  add_custom_target(unit-console-newline-build ALL DEPENDS ${CONSOLE_NEWLINE_TEST_BIN})
-  add_test(
-    NAME unit-console-newline
-    COMMAND ${CONSOLE_NEWLINE_TEST_BIN})
-  set_tests_properties(unit-console-newline PROPERTIES DEPENDS unit-console-newline-build)
+  function(add_host_unity_test)
+    set(options)
+    set(one_value_args NAME)
+    set(multi_value_args SOURCES DEPENDS INCLUDE_DIRS)
+    cmake_parse_arguments(HOST_TEST "${options}" "${one_value_args}"
+                          "${multi_value_args}" ${ARGN})
+
+    if(NOT HOST_TEST_NAME)
+      message(FATAL_ERROR "add_host_unity_test requires NAME")
+    endif()
+    if(NOT HOST_TEST_SOURCES)
+      message(FATAL_ERROR "add_host_unity_test requires SOURCES")
+    endif()
+
+    set(test_bin ${CMAKE_CURRENT_BINARY_DIR}/${HOST_TEST_NAME})
+    set(include_flags -I${CMAKE_SOURCE_DIR} -I${UNITY_RESOLVED_SOURCE_DIR}/src)
+    foreach(include_dir IN LISTS HOST_TEST_INCLUDE_DIRS)
+      list(APPEND include_flags -I${include_dir})
+    endforeach()
+
+    add_custom_command(
+      OUTPUT ${test_bin}
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}
+      COMMAND ${HOST_CC}
+              -std=c11
+              -Wall
+              -Wextra
+              ${include_flags}
+              ${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c
+              ${HOST_TEST_SOURCES}
+              -o ${test_bin}
+      DEPENDS
+        ${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c
+        ${UNITY_RESOLVED_SOURCE_DIR}/src/unity.h
+        ${HOST_TEST_SOURCES}
+        ${HOST_TEST_DEPENDS}
+      COMMAND_EXPAND_LISTS
+      VERBATIM)
+
+    set(test_build_target ${HOST_TEST_NAME}-build)
+    add_custom_target(${test_build_target} ALL DEPENDS ${test_bin})
+    add_test(NAME ${HOST_TEST_NAME} COMMAND ${test_bin})
+    set_tests_properties(${HOST_TEST_NAME} PROPERTIES DEPENDS ${test_build_target})
+  endfunction()
 elseif(NOT HOST_CC)
-  message(STATUS "No host C compiler found; unit-console-newline test will not be available")
+  message(STATUS "No host C compiler found; host Unity unit tests will not be available")
 else()
-  message(STATUS "Unity source not available; unit-console-newline test will not be available")
+  message(STATUS "Unity source not available; host Unity unit tests will not be available")
 endif()
+
+add_subdirectory(Unit)
