@@ -5,8 +5,22 @@
 
 #include <stdint.h>
 
-void platform_console_putc(char c) {
-  // static: initialize once, before main()
-  static volatile uint8_t* const uart_tx = (uint8_t*)UART_TX;
-  *uart_tx = (uint8_t)c;
+static inline void uart_putc(char c) {
+  // if bit 5 of UART0_FR is high, the FIFO for TX is full, so wait
+  while (UART0_FR & UART_FR_TXFF) {
+    // wait until FIFO is not full
+  }
+  UART0_DR = (uint32_t)c;
 }
+
+static inline char uart_getc(void) {
+  // if bit 4 of UART0_FR is high, the FIFO for RX is empty, so wait
+  while (UART0_FR & UART_FR_RXFE) {
+    // wait until FIFO is not empty
+  }
+  return (char)UART0_DR;
+}
+
+void platform_console_putc(char c) { uart_putc(c); }
+
+char platform_console_getc(void) { return uart_getc(); }
