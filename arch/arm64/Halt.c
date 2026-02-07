@@ -1,7 +1,7 @@
 // Distributed under the MIT license.
 // See LICENSE.txt for details.
 
-#pragma once
+#include "arch/Halt.h"
 
 void halt(void) {
   // Put the processor politely to sleep

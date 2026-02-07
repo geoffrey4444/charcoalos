@@ -7,13 +7,12 @@
 
 static inline void uart_putc(char c) {
   // if bit 5 of UART0_FR is high, the FIFO for UART is full, so wait
-  while (UART0_FR & (1u <<5)) {
+  while (UART0_FR & (1u << 5)) {
     // wait until FFIO is not full
   }
   UART0_DR = (uint32_t)c;
 }
 
-static void platform_console_putc(const char c) {
-  // static: initialize once, before main()
+void platform_console_putc(char c) {
   uart_putc(c);
 }

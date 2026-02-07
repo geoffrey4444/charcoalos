@@ -8,17 +8,90 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
           "In-source builds are not supported. Configure with: cmake -S . -B build")
 endif()
 
-project(charcoalos LANGUAGES NONE)
-include(CTest)
-
 set(AARCH64_TOOLCHAIN_PREFIX "aarch64-elf-" CACHE STRING
     "Prefix for the AArch64 bare-metal cross toolchain")
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+if(NOT CMAKE_C_COMPILER)
+  find_program(CHARCOALOS_AARCH64_GCC NAMES ${AARCH64_TOOLCHAIN_PREFIX}gcc REQUIRED)
+  set(CMAKE_C_COMPILER "${CHARCOALOS_AARCH64_GCC}" CACHE FILEPATH
+      "C compiler for CharcoalOS" FORCE)
+endif()
+
+project(charcoalos LANGUAGES C)
+include(CTest)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_program(AARCH64_AS NAMES ${AARCH64_TOOLCHAIN_PREFIX}as REQUIRED)
-find_program(AARCH64_GCC NAMES ${AARCH64_TOOLCHAIN_PREFIX}gcc REQUIRED)
 find_program(AARCH64_LD NAMES ${AARCH64_TOOLCHAIN_PREFIX}ld REQUIRED)
 find_program(AARCH64_OBJCOPY NAMES ${AARCH64_TOOLCHAIN_PREFIX}objcopy REQUIRED)
 find_program(QEMU_SYSTEM_AARCH64 NAMES qemu-system-aarch64)
+set(AARCH64_GCC "${CMAKE_C_COMPILER}")
+
+add_subdirectory(kernel)
+add_subdirectory(arch/arm64)
+add_subdirectory(platform/virt)
+add_subdirectory(platform/rpi)
+
+set(REF_VIRT_BUILD_DIR ${CMAKE_BINARY_DIR}/virt)
+set(REF_VIRT_BOOT_O ${REF_VIRT_BUILD_DIR}/boot.o)
+set(REF_VIRT_ELF ${REF_VIRT_BUILD_DIR}/kernel.elf)
+
+add_custom_command(
+  OUTPUT ${REF_VIRT_BOOT_O}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${REF_VIRT_BUILD_DIR}
+  COMMAND ${AARCH64_AS} ${CMAKE_SOURCE_DIR}/platform/virt/boot.s -o ${REF_VIRT_BOOT_O}
+  DEPENDS ${CMAKE_SOURCE_DIR}/platform/virt/boot.s
+  VERBATIM)
+
+add_custom_command(
+  OUTPUT ${REF_VIRT_ELF}
+  COMMAND ${CMAKE_COMMAND} -E chdir ${REF_VIRT_BUILD_DIR}
+          ${AARCH64_LD} -nostdlib -T ${CMAKE_SOURCE_DIR}/platform/virt/linker.ld
+          boot.o
+          $<TARGET_OBJECTS:kernel_common>
+          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:platform_virt>
+          -o kernel.elf
+  DEPENDS ${REF_VIRT_BOOT_O} kernel_common arch_arm64 platform_virt
+  COMMAND_EXPAND_LISTS
+  VERBATIM)
+add_custom_target(refactored-virt DEPENDS ${REF_VIRT_ELF})
+add_custom_target(virt ALL DEPENDS refactored-virt)
+
+set(REF_RPI_BUILD_DIR ${CMAKE_BINARY_DIR}/rpi)
+set(REF_RPI_BOOT_O ${REF_RPI_BUILD_DIR}/boot.o)
+set(REF_RPI_ELF ${REF_RPI_BUILD_DIR}/kernel.elf)
+set(REF_RPI_IMG ${REF_RPI_BUILD_DIR}/kernel8.img)
+
+add_custom_command(
+  OUTPUT ${REF_RPI_BOOT_O}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${REF_RPI_BUILD_DIR}
+  COMMAND ${AARCH64_AS} ${CMAKE_SOURCE_DIR}/platform/rpi/boot.s -o ${REF_RPI_BOOT_O}
+  DEPENDS ${CMAKE_SOURCE_DIR}/platform/rpi/boot.s
+  VERBATIM)
+
+add_custom_command(
+  OUTPUT ${REF_RPI_ELF}
+  COMMAND ${AARCH64_LD} -nostdlib -T ${CMAKE_SOURCE_DIR}/platform/rpi/linker.ld
+          ${REF_RPI_BOOT_O}
+          $<TARGET_OBJECTS:kernel_common>
+          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:platform_rpi>
+          -o ${REF_RPI_ELF}
+  DEPENDS ${REF_RPI_BOOT_O} kernel_common arch_arm64 platform_rpi
+  COMMAND_EXPAND_LISTS
+  VERBATIM)
+add_custom_target(refactored-rpi-elf DEPENDS ${REF_RPI_ELF})
+
+add_custom_command(
+  OUTPUT ${REF_RPI_IMG}
+  COMMAND ${AARCH64_OBJCOPY} -O binary ${REF_RPI_ELF} ${REF_RPI_IMG}
+  DEPENDS refactored-rpi-elf
+  VERBATIM)
+add_custom_target(refactored-rpi DEPENDS ${REF_RPI_IMG})
+add_custom_target(rpi ALL DEPENDS refactored-rpi)
+add_custom_target(refactored DEPENDS virt rpi)
 
 set(VIRT_SRC_DIR ${CMAKE_SOURCE_DIR}/minimal/virt)
 set(VIRT_BUILD_DIR ${CMAKE_BINARY_DIR}/minimal/virt)
@@ -49,6 +122,24 @@ set(VIRT_QEMU_SERIAL_MON_STDIO ON CACHE BOOL
     "Use -serial mon:stdio when running minimal-virt")
 
 if(QEMU_SYSTEM_AARCH64)
+  set(REF_VIRT_QEMU_RUN_ARGS
+      -machine ${VIRT_QEMU_MACHINE}
+      -cpu ${VIRT_QEMU_CPU}
+      -m ${VIRT_QEMU_MEMORY}
+      -kernel ${REF_VIRT_ELF})
+  if(VIRT_QEMU_NOGRAPHIC)
+    list(APPEND REF_VIRT_QEMU_RUN_ARGS -nographic)
+  endif()
+  if(VIRT_QEMU_SERIAL_MON_STDIO)
+    list(APPEND REF_VIRT_QEMU_RUN_ARGS -serial mon:stdio)
+  endif()
+  add_custom_target(
+    run-virt
+    COMMAND ${QEMU_SYSTEM_AARCH64} ${REF_VIRT_QEMU_RUN_ARGS}
+    DEPENDS virt
+    USES_TERMINAL
+    COMMENT "Run refactored virt target in QEMU")
+
   set(VIRT_QEMU_RUN_ARGS
       -machine ${VIRT_QEMU_MACHINE}
       -cpu ${VIRT_QEMU_CPU}
@@ -69,7 +160,7 @@ if(QEMU_SYSTEM_AARCH64)
     COMMENT "Run minimal-virt in QEMU")
 else()
   message(STATUS
-          "qemu-system-aarch64 not found; run-minimal-virt target will not be available")
+          "qemu-system-aarch64 not found; run-virt and run-minimal-virt targets will not be available")
 endif()
 
 set(RPI_SRC_DIR ${CMAKE_SOURCE_DIR}/minimal/rpi)

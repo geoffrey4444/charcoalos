@@ -1,13 +1,13 @@
 // Distributed under the MIT license.
 // See LICENSE.txt for details.
 
-#include "Console/IO.h"
+#include "kernel/Console/IO.h"
 
-static void console_puc(const char c) { platform_console_putc(c); }
+void console_putc(char c) { platform_console_putc(c); }
 
-static void console_print(const char* text) {
+void console_print(const char* text) {
   while (*text != '\0') {
-    char character = *text;
+    const char character = *text;
     // serial terminal needs carriage return CR ('\r') -- move to line start --
     // to preceed newline NL ('\n') -- move to next line
     if (character == '\n') {

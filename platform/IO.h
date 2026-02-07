@@ -9,4 +9,4 @@
  * Implementation is platform dependent.
  * Input: c, a character
  */
-static void platform_console_putc(const char c);
+void platform_console_putc(char c);
