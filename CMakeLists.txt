@@ -58,7 +58,14 @@ add_custom_command(
           $<TARGET_OBJECTS:arch_arm64>
           $<TARGET_OBJECTS:platform_virt>
           -o kernel.elf
-  DEPENDS ${REF_VIRT_BOOT_O} kernel_common arch_arm64 platform_virt
+  DEPENDS ${REF_VIRT_BOOT_O}
+          ${CMAKE_SOURCE_DIR}/platform/virt/linker.ld
+          kernel_common
+          arch_arm64
+          platform_virt
+          $<TARGET_OBJECTS:kernel_common>
+          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:platform_virt>
   COMMAND_EXPAND_LISTS
   VERBATIM)
 add_custom_target(refactored-virt DEPENDS ${REF_VIRT_ELF})
@@ -84,7 +91,14 @@ add_custom_command(
           $<TARGET_OBJECTS:arch_arm64>
           $<TARGET_OBJECTS:platform_rpi>
           -o ${REF_RPI_ELF}
-  DEPENDS ${REF_RPI_BOOT_O} kernel_common arch_arm64 platform_rpi
+  DEPENDS ${REF_RPI_BOOT_O}
+          ${CMAKE_SOURCE_DIR}/platform/rpi/linker.ld
+          kernel_common
+          arch_arm64
+          platform_rpi
+          $<TARGET_OBJECTS:kernel_common>
+          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:platform_rpi>
   COMMAND_EXPAND_LISTS
   VERBATIM)
 add_custom_target(refactored-rpi-elf DEPENDS ${REF_RPI_ELF})
@@ -92,7 +106,7 @@ add_custom_target(refactored-rpi-elf DEPENDS ${REF_RPI_ELF})
 add_custom_command(
   OUTPUT ${REF_RPI_IMG}
   COMMAND ${AARCH64_OBJCOPY} -O binary ${REF_RPI_ELF} ${REF_RPI_IMG}
-  DEPENDS refactored-rpi-elf
+  DEPENDS ${REF_RPI_ELF}
   VERBATIM)
 add_custom_target(refactored-rpi DEPENDS ${REF_RPI_IMG})
 add_custom_target(rpi ALL DEPENDS refactored-rpi)
@@ -106,6 +120,7 @@ set(VIRT_ELF ${VIRT_BUILD_DIR}/kernel.elf)
 
 add_custom_command(
   OUTPUT ${VIRT_ELF}
+  BYPRODUCTS ${VIRT_BOOT_O} ${VIRT_KERNEL_O}
   COMMAND ${CMAKE_COMMAND} -E make_directory ${VIRT_BUILD_DIR}
   COMMAND ${AARCH64_AS} ${VIRT_SRC_DIR}/boot.s -o ${VIRT_BOOT_O}
   COMMAND ${AARCH64_GCC} -ffreestanding -fno-builtin -nostdlib -c ${VIRT_SRC_DIR}/kernel.c -o ${VIRT_KERNEL_O}
@@ -177,6 +192,7 @@ set(RPI_IMG ${RPI_BUILD_DIR}/kernel8.img)
 
 add_custom_command(
   OUTPUT ${RPI_IMG}
+  BYPRODUCTS ${RPI_BOOT_O} ${RPI_KERNEL_O} ${RPI_ELF}
   COMMAND ${CMAKE_COMMAND} -E make_directory ${RPI_BUILD_DIR}
   COMMAND ${AARCH64_AS} ${RPI_SRC_DIR}/boot.s -o ${RPI_BOOT_O}
   COMMAND ${AARCH64_GCC} -ffreestanding -fno-builtin -nostdlib -c ${RPI_SRC_DIR}/kernel.c -o ${RPI_KERNEL_O}
