@@ -193,6 +193,8 @@ if(BUILD_TESTING)
   option(CHARCOALOS_FETCH_UNITY
          "Automatically fetch Unity from official sources when not found locally"
          ON)
+  set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL
+      "Avoid network updates for already-populated FetchContent dependencies" FORCE)
   set(UNITY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/unity" CACHE PATH
       "Path to a Unity checkout (expects src/unity.h and src/unity.c)")
 
@@ -206,18 +208,20 @@ if(BUILD_TESTING)
       GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
       GIT_TAG master
       GIT_SHALLOW TRUE)
-    FetchContent_MakeAvailable(unity_upstream)
+    cmake_policy(PUSH)
+    if(POLICY CMP0169)
+      cmake_policy(SET CMP0169 OLD)
+    endif()
+    FetchContent_GetProperties(unity_upstream)
+    if(NOT unity_upstream_POPULATED)
+      FetchContent_Populate(unity_upstream)
+    endif()
+    cmake_policy(POP)
     set(UNITY_RESOLVED_SOURCE_DIR "${unity_upstream_SOURCE_DIR}")
   endif()
 
   if(UNITY_RESOLVED_SOURCE_DIR)
-    if(TARGET unity)
-      message(STATUS "Using Unity target provided by upstream CMake")
-    else()
-      add_library(unity INTERFACE)
-      target_include_directories(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src")
-      target_sources(unity INTERFACE "${UNITY_RESOLVED_SOURCE_DIR}/src/unity.c")
-    endif()
+    message(STATUS "Unity source available at ${UNITY_RESOLVED_SOURCE_DIR}")
   else()
     message(STATUS
             "Unity not found at ${UNITY_SOURCE_DIR}; set CHARCOALOS_FETCH_UNITY=ON to auto-fetch it")

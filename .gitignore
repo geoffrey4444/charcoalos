@@ -29,3 +29,5 @@ cmake-build-*/
 *.map
 *.lst
 *.dis
+
+.clangd
