@@ -10,6 +10,11 @@ endif()
 
 set(AARCH64_TOOLCHAIN_PREFIX "aarch64-elf-" CACHE STRING
     "Prefix for the AArch64 bare-metal cross toolchain")
+# Bare-metal cross setup: prevent Darwin host defaults (for example, '-arch arm64')
+# from being injected into compiler checks and build rules.
+set(CMAKE_SYSTEM_NAME Generic CACHE STRING "Target system" FORCE)
+set(CMAKE_SYSTEM_PROCESSOR aarch64 CACHE STRING "Target processor" FORCE)
+set(CMAKE_OSX_ARCHITECTURES "" CACHE STRING "Disable host OSX arch flags for cross build" FORCE)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 if(NOT CMAKE_C_COMPILER)
