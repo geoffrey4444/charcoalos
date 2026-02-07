@@ -53,6 +53,21 @@ add_test(
           -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_refactored_rpi_elf_symbols.cmake)
 set_tests_properties(symbols-refactored-rpi-elf PROPERTIES DEPENDS refactored-rpi-elf)
 
+if(QEMU_SYSTEM_AARCH64)
+  add_test(
+    NAME smoke-refactored-virt-console
+    COMMAND ${CMAKE_COMMAND}
+            -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
+            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DQEMU_MACHINE=virt
+            -DQEMU_CPU=max
+            -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
+            -DEXPECTED_SUBSTRING=Welcome\ to\ CharcoalOS.
+            -DSMOKE_TIMEOUT_SEC=2
+            -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_console_smoke.cmake)
+  set_tests_properties(smoke-refactored-virt-console PROPERTIES DEPENDS refactored-virt)
+endif()
+
 find_program(HOST_CC NAMES clang cc gcc)
 if(HOST_CC AND UNITY_RESOLVED_SOURCE_DIR)
   function(add_host_unity_test)
