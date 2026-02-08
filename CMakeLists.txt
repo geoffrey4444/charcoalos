@@ -222,7 +222,7 @@ if(BUILD_TESTING)
     FetchContent_Declare(
       unity_upstream
       GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
-      GIT_TAG master
+      GIT_TAG v2.6.1
       GIT_SHALLOW TRUE)
     cmake_policy(PUSH)
     if(POLICY CMP0169)
