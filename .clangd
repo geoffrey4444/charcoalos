@@ -1,0 +1,12 @@
+CompileFlags:
+  CompilationDatabase: build
+
+---
+If:
+  PathMatch: .*/tests/Unit/.*\.(c|h)
+CompileFlags:
+  Add:
+    - -std=c11
+    - -I.
+    - -Ibuild/_deps/unity_upstream-src/src
+    - -Ithird_party/unity/src
