@@ -44,7 +44,7 @@ void console_read(char* buffer, size_t size);
 
 /*!
  * \brief Reads a line from the serial console.
- * \details Reads until a newline `'\n'` or carriage return `'\b'` is
+ * \details Reads until a newline `'\n'` or carriage return `'\r'` is
  * encountered, and then completes the buffer with a null terminator `'\0'`.
  * Optionally echoes the read characters. Handles backspace.
  */

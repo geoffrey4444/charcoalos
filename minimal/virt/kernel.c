@@ -3,7 +3,7 @@
 
 // Build
 // aarch64-elf-as boot.s -o boot.o
-// aarach64-elf-gcc -ffreestanding -c kernel.c -o kernel.o
+// aarch64-elf-gcc -ffreestanding -c kernel.c -o kernel.o
 // aarch64-elf-ld -nostdlib -Tlinker.ld boot.o kernel.o -o kernel.elf
 // Run
 // qemu-system-aarch64 -machine virt,accel=hvf -cpu host -m 512M -nographic
