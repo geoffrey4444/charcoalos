@@ -18,6 +18,6 @@ SECTIONS {
 				 /* round locations to multiple of 8 bytes */
   . = ALIGN(16);                 /* stack pointer should be 16-byte aligned */
                                  /* at call boundaries */
-  . += 0x1000; /* Set up 4kB stack memory: move counter up 4kB */
+  . += 0x4000; /* Set up 16kB stack memory: move counter up 4kB */
   stack_top = .; /* define stack_top for boot code as 0x40101000*/
 }
