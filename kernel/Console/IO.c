@@ -44,10 +44,10 @@ void console_read(char* text, size_t size) {
   while (i < size) {
     text[i] = console_getc();
     ++i;
-  }  
+  }
 }
 
-void console_read_line(char* text, size_t size) {
+void console_read_line(char* text, size_t size, bool echo) {
   size_t i = 0;
 
   if (size == 0) {
@@ -56,12 +56,38 @@ void console_read_line(char* text, size_t size) {
 
   while (i + 1 < size) {
     const char c = console_getc();
+
+    // Terminate and return the string if the character is a newline or
+    // carriage return
     if ((c == '\n') || (c == '\r')) {
       text[i] = '\0';
+
+      if (echo) {
+        console_putc('\r');
+        console_putc('\n');
+      }
       return;
     }
-    text[i] = c;
-    ++i;
+
+    // Handle backspace
+    if ((c == '\b') || (c == '\x7f')) {
+      if (i == 0) {
+        // Do not backspace past beginning of prompt.
+        continue;
+      }
+      // Remove the most recent character from the string
+      --i;
+      if (echo) {
+        // Move left, emit space, move left
+        console_print("\b \b");
+      }
+    } else {
+      text[i] = c;
+      if (echo) {
+        console_putc(c);
+      }
+      ++i;
+    }
   }
   text[i] = '\0';
   return;

@@ -101,10 +101,11 @@ void test_console_read_line_stops_at_newline_and_terminates(void) {
   char out[8] = {0};
 
   load_rx(rx, sizeof(rx));
-  console_read_line(out, sizeof(out));
+  console_read_line(out, sizeof(out), false);
 
   TEST_ASSERT_EQUAL_STRING("abc", out);
   TEST_ASSERT_EQUAL_size_t(4, g_rx_index);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
 }
 
 void test_console_read_line_with_zero_size_does_not_consume_input(void) {
@@ -112,10 +113,11 @@ void test_console_read_line_with_zero_size_does_not_consume_input(void) {
   char out[1] = {0};
 
   load_rx(rx, sizeof(rx));
-  console_read_line(out, 0);
+  console_read_line(out, 0, false);
 
   TEST_ASSERT_EQUAL_size_t(0, g_rx_index);
   TEST_ASSERT_EQUAL_CHAR('\0', out[0]);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
 }
 
 void test_console_read_line_truncates_and_null_terminates(void) {
@@ -123,10 +125,37 @@ void test_console_read_line_truncates_and_null_terminates(void) {
   char out[4] = {0};
 
   load_rx(rx, sizeof(rx));
-  console_read_line(out, sizeof(out));
+  console_read_line(out, sizeof(out), false);
 
   TEST_ASSERT_EQUAL_STRING("abc", out);
   TEST_ASSERT_EQUAL_size_t(3, g_rx_index);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
+}
+
+void test_console_read_line_echo_false_handles_backspace_without_output(void) {
+  const char rx[] = {'a', 'b', '\b', 'c', '\n'};
+  char out[8] = {0};
+
+  load_rx(rx, sizeof(rx));
+  console_read_line(out, sizeof(out), false);
+
+  TEST_ASSERT_EQUAL_STRING("ac", out);
+  TEST_ASSERT_EQUAL_size_t(sizeof(rx), g_rx_index);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
+}
+
+void test_console_read_line_echo_true_handles_backspace_and_echoes_edits(void) {
+  const char rx[] = {'a', 'b', '\b', 'c', '\n'};
+  const char expected_tx[] = {'a', 'b', '\b', ' ', '\b', 'c', '\r', '\n'};
+  char out[8] = {0};
+
+  load_rx(rx, sizeof(rx));
+  console_read_line(out, sizeof(out), true);
+
+  TEST_ASSERT_EQUAL_STRING("ac", out);
+  TEST_ASSERT_EQUAL_size_t(sizeof(rx), g_rx_index);
+  TEST_ASSERT_EQUAL_size_t(sizeof(expected_tx), g_tx_index);
+  TEST_ASSERT_EQUAL_MEMORY(expected_tx, g_tx_buffer, sizeof(expected_tx));
 }
 
 int main(void) {
@@ -140,5 +169,7 @@ int main(void) {
   RUN_TEST(test_console_read_line_stops_at_newline_and_terminates);
   RUN_TEST(test_console_read_line_with_zero_size_does_not_consume_input);
   RUN_TEST(test_console_read_line_truncates_and_null_terminates);
+  RUN_TEST(test_console_read_line_echo_false_handles_backspace_without_output);
+  RUN_TEST(test_console_read_line_echo_true_handles_backspace_and_echoes_edits);
   return UNITY_END();
 }
