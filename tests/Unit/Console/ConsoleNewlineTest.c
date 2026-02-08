@@ -16,6 +16,8 @@ void platform_console_putc(char c) {
   }
 }
 
+char platform_console_getc(void) { return '\0'; }
+
 void setUp(void) {}
 
 void tearDown(void) {}

@@ -10,4 +10,13 @@ if(COMMAND add_host_unity_test)
     DEPENDS
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
       ${CMAKE_SOURCE_DIR}/platform/IO.h)
+
+  add_host_unity_test(
+    NAME unit-console-io
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/ConsoleIOTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
+      ${CMAKE_SOURCE_DIR}/platform/IO.h)
 endif()
