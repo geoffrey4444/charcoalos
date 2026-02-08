@@ -40,9 +40,11 @@ void console_read(char* text, size_t size) {
     return;
   }
 
-  for (size_t i = 0; i < size; ++i) {
+  size_t i = 0;
+  while (i < size) {
     text[i] = console_getc();
-  }
+    ++i;
+  }  
 }
 
 void console_read_line(char* text, size_t size) {
