@@ -7,6 +7,12 @@
 *.swo
 *~
 
+# vscode
+.vscode/
+
+# emacs
+*~
+
 # Root build directories (e.g. build, build-debug, build-clang)
 /build*/
 /Testing/
