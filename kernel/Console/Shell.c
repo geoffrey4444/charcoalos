@@ -73,7 +73,7 @@ void dispatch_command(char *command) {
   // No command found
   console_print("Error: the command ");
   console_print(cargv[0]);
-  console_print("could not be recognized. Type help for a list of commands.\n");
+  console_print(" could not be recognized. Type help for a list of commands.\n");
 }
 
 void print_prompt(void) { console_print("> "); }
@@ -81,26 +81,36 @@ void print_prompt(void) { console_print("> "); }
 // Handlers for built-in commands
 
 int help_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
   console_print("Command not yet implemented\n");
   return 1;
 }
 
 int info_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
   console_print("Command not yet implemented\n");
   return 1;
 }
 
 int memread_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
   console_print("Command not yet implemented\n");
   return 1;
 }
 
 int reboot_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
   console_print("Command not yet implemented\n");
   return 1;
 }
 
 int registers_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
   console_print("Command not yet implemented\n");
   return 1;
 }

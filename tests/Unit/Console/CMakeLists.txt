@@ -23,4 +23,17 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
       ${CMAKE_SOURCE_DIR}/kernel/String/String.h
       ${CMAKE_SOURCE_DIR}/platform/IO.h)
+
+  add_host_unity_test(
+    NAME unit-shell
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/ShellTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Console/Shell.c
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.c
+      ${CMAKE_SOURCE_DIR}/kernel/String/String.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Console/Shell.h
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
+      ${CMAKE_SOURCE_DIR}/kernel/String/String.h
+      ${CMAKE_SOURCE_DIR}/platform/IO.h)
 endif()
