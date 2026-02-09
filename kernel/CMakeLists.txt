@@ -3,7 +3,9 @@
 
 add_library(kernel_common OBJECT
   Console/IO.c
-  Main/Main.c)
+  Console/Shell.c
+  Main/Main.c
+  String/String.c)
 target_compile_options(kernel_common PRIVATE
   -ffreestanding
   -fno-builtin)

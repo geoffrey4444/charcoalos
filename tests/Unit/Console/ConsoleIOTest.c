@@ -2,6 +2,7 @@
 // See LICENSE.txt for details.
 
 #include "kernel/Console/IO.h"
+#include "kernel/String/String.h"
 #include "unity.h"
 
 #include <stddef.h>

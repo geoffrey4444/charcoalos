@@ -3,6 +3,7 @@
 
 #include "arch/Halt.h"
 #include "kernel/Console/IO.h"
+#include "kernel/Console/Shell.h"
 
 #include <stdbool.h>
 
@@ -10,13 +11,12 @@
 
 void kmain(void) {
   char command[COMMAND_LENGTH];
-  console_print("Welcome to CharcoalOS.\n> ");
+  console_print("Welcome to CharcoalOS.\n");
+  print_prompt();
   while (true) {
     console_read_line(command, COMMAND_LENGTH, true);
-    // Later, replace this with code to parse and handle the command.
-    console_print("Command received: ");
-    console_print(command);
-    console_print("\n> ");
+    dispatch_command(command);
+    print_prompt();
   }
   halt();
 }

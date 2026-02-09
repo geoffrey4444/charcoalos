@@ -9,14 +9,6 @@
 #include <stddef.h>
 
 /*!
- * \brief Returns the length of a null-terminated string `str`.
- * \details Just counts the number of characters until the first `'\0'`.
- * \param str The string whose length is to be measured.
- * \returns The size in bytes of the string.
- */
-size_t string_length(const char* str);
-
-/*!
  * \brief Writes a single character `c` to the serial console.
  * \param c The character to write.
  */

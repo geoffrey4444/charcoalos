@@ -2,14 +2,7 @@
 // See LICENSE.txt for details.
 
 #include "kernel/Console/IO.h"
-
-size_t string_length(const char* string) {
-  size_t i = 0;
-  while (string[i] != '\0') {
-    ++i;
-  }
-  return i;
-}
+#include "kernel/String/String.h"
 
 void console_putc(char c) { platform_console_putc(c); }
 
