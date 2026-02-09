@@ -27,6 +27,35 @@ project(charcoalos LANGUAGES C)
 include(CTest)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_package(Doxygen QUIET)
+if(Doxygen_FOUND)
+  set(DOXYGEN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/docs")
+  set(DOXYGEN_HTML_OUTPUT_DIR "${DOXYGEN_OUTPUT_DIR}/html")
+  set(DOXYGEN_INPUT_DIRS
+      "${CMAKE_SOURCE_DIR}/kernel"
+      "${CMAKE_SOURCE_DIR}/arch"
+      "${CMAKE_SOURCE_DIR}/platform"
+      "${CMAKE_SOURCE_DIR}/minimal")
+  set(DOXYGEN_EXCLUDE_PATTERNS
+      "*/build/*"
+      "*/build-*/*")
+  string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT_DIRS}")
+  string(REPLACE ";" " " DOXYGEN_EXCLUDES "${DOXYGEN_EXCLUDE_PATTERNS}")
+  set(DOXYFILE_IN "${CMAKE_SOURCE_DIR}/cmake/Doxyfile.in")
+  set(DOXYFILE_OUT "${CMAKE_BINARY_DIR}/Doxyfile")
+
+  configure_file("${DOXYFILE_IN}" "${DOXYFILE_OUT}" @ONLY)
+  add_custom_target(
+    docs
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${DOXYGEN_OUTPUT_DIR}"
+    COMMAND Doxygen::doxygen "${DOXYFILE_OUT}"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Generate HTML documentation with Doxygen"
+    VERBATIM)
+else()
+  message(STATUS "Doxygen not found; docs target is unavailable")
+endif()
+
 find_program(AARCH64_AS NAMES ${AARCH64_TOOLCHAIN_PREFIX}as REQUIRED)
 find_program(AARCH64_LD NAMES ${AARCH64_TOOLCHAIN_PREFIX}ld REQUIRED)
 find_program(AARCH64_OBJCOPY NAMES ${AARCH64_TOOLCHAIN_PREFIX}objcopy REQUIRED)
