@@ -12,7 +12,7 @@
  * \param other The other string
  * \returns True if the strings are identical, false otherwise
  */
-bool string_compare(const char* text, const char* other);
+bool string_compare(const char *text, const char *other);
 
 /*!
  * \brief Returns the length of a null-terminated string `str`.
@@ -20,4 +20,4 @@ bool string_compare(const char* text, const char* other);
  * \param str The string whose length is to be measured.
  * \returns The size in bytes of the string.
  */
-size_t string_length(const char* str);
+size_t string_length(const char *str);

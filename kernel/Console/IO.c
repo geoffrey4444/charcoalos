@@ -4,6 +4,8 @@
 #include "kernel/Console/IO.h"
 #include "kernel/String/String.h"
 
+#include <stddef.h>
+
 void console_putc(char c) { platform_console_putc(c); }
 
 void console_write(const char* text, size_t size) {
@@ -83,5 +85,30 @@ void console_read_line(char* text, size_t size, bool echo) {
     }
   }
   text[i] = '\0';
+  return;
+}
+
+void console_print_hex(const void* data, size_t size) {
+  uint8_t byte;
+  uint8_t lo;
+  uint8_t hi;
+  size_t i = 0;
+  for (size_t i = size; i > 0; --i) {
+    byte = ((char*)data)[i - 1];
+    lo = (byte & 15);
+    if (lo > 9) {
+      lo += 17;  // A - F
+    }
+    lo += 48;
+
+    hi = ((byte >> 4) & 15);
+    if (hi > 9) {
+      hi += 17;  // A - F
+    }
+    hi += 48;
+
+    console_putc(hi);
+    console_putc(lo);
+  }
   return;
 }

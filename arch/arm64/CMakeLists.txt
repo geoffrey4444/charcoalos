@@ -2,7 +2,8 @@
 # See LICENSE.txt for details.
 
 add_library(arch_arm64 OBJECT
-  Halt.c)
+  Halt.c
+  Info.c)
 target_compile_options(arch_arm64 PRIVATE
   -ffreestanding
   -fno-builtin)

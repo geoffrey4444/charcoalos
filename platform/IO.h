@@ -3,17 +3,25 @@
 
 #pragma once
 
+#include <stddef.h>
+
 /*!
- * platform_console_putc
- * Prints a characater to the serial console, e.g. UART.
+ * \brief Prints a characater to the serial console, e.g. UART.
  * Implementation is platform dependent.
- * Input: c, a character
+ * \param c A character
  */
 void platform_console_putc(char c);
 
 /*!
- * platform_console_getc
  * Returns a character read from the serial console, e.g. UART.
  * Implementation is platform dependent
+ * \returns An input character.
  */
 char platform_console_getc(void);
+
+/*!
+ * \brief Returns the name of the platform
+ * \param name The name of the platform
+ * \param size The maximum size that name cna hold
+ */
+const char* platform_name(void);

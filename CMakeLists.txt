@@ -161,6 +161,8 @@ add_custom_target(minimal-virt ALL DEPENDS ${VIRT_ELF})
 
 set(VIRT_QEMU_MACHINE "virt,accel=hvf" CACHE STRING
     "QEMU machine argument for running minimal-virt")
+set(VIRT_QEMU_SMP "4" CACHE STRING
+    "QEMU SMP argument for running minimal-virt")
 set(VIRT_QEMU_CPU "host" CACHE STRING
     "QEMU cpu argument for running minimal-virt")
 set(VIRT_QEMU_MEMORY "512M" CACHE STRING
@@ -174,6 +176,7 @@ if(QEMU_SYSTEM_AARCH64)
   set(REF_VIRT_QEMU_RUN_ARGS
       -machine ${VIRT_QEMU_MACHINE}
       -cpu ${VIRT_QEMU_CPU}
+      -smp ${VIRT_QEMU_SMP}
       -m ${VIRT_QEMU_MEMORY}
       -kernel ${REF_VIRT_ELF})
   if(VIRT_QEMU_NOGRAPHIC)
@@ -193,6 +196,7 @@ if(QEMU_SYSTEM_AARCH64)
       -machine ${VIRT_QEMU_MACHINE}
       -cpu ${VIRT_QEMU_CPU}
       -m ${VIRT_QEMU_MEMORY}
+      -smp ${VIRT_QEMU_SMP}
       -kernel ${VIRT_ELF})
   if(VIRT_QEMU_NOGRAPHIC)
     list(APPEND VIRT_QEMU_RUN_ARGS -nographic)

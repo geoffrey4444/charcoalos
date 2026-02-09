@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /*!
  * \brief Writes a single character `c` to the serial console.
@@ -53,3 +54,10 @@ void console_read(char* buffer, size_t size);
  * \param echo Whether or not to also echo the input to the console.
  */
 void console_read_line(char* buffer, size_t size, bool echo);
+
+/*!
+ * \brief Prints data as a hex string
+ * \param data The bytes to print as hex
+ * \param size The size of the data to print in bytes
+ */
+void console_print_hex(const void* data, size_t size);

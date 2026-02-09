@@ -1,12 +1,16 @@
 // Distributed under the MIT license.
 // See LICENSE.txt for details.
 
+#include "arch/Info.h"
 #include "kernel/Console/IO.h"
 #include "kernel/Console/Shell.h"
 #include "kernel/String/String.h"
+#include "platform/IO.h"
+#include "platform/Info.h"
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 size_t tokenize_command(char *command, char *tokens[], size_t max_tokens) {
   if (max_tokens == 0) {
@@ -100,8 +104,70 @@ int help_handler(size_t argc, const char *const *argv) {
 int info_handler(size_t argc, const char *const *argv) {
   (void)argc;
   (void)argv;
-  console_print("Command not yet implemented\n");
-  return 1;
+
+  char data[16];
+
+  console_print("CharcoalOS built and linked on ");
+  console_print(__DATE__);
+  console_print(" ");
+  console_print(__TIME__);
+  console_print("\n");
+
+  console_print("Compiler: ");
+  #if defined(__clang__)
+  console_print("clang\n");
+  #elif defined(__GNUC__)
+  console_print("gcc\n");
+  #else
+  console_print("Unknown");
+  #endif
+
+  console_print("Pointer size (bytes): 0x");
+  const size_t pointer_size = sizeof(void*);
+  data[0] = pointer_size;
+  console_print_hex(data, 1);
+  console_print("\n");
+
+  console_print("Hosted C environment: ");
+  if (__STDC_HOSTED__) {
+    console_print("yes\n");
+  } else {
+    console_print("no\n");
+  }
+
+  console_print("MMIO base address: 0x");
+  uintptr_t mmio_address = mmio_base_address();
+  console_print_hex((const void*)&mmio_address, pointer_size);
+  console_print("\n");
+  console_print("UART base address: 0x");
+  uintptr_t uart_address = uart_base_address();
+  console_print_hex((const void*)&uart_address, pointer_size);
+  console_print("\n");
+
+  console_print("Current exception level: 0x");
+  data[0] = current_exception_level();
+  console_print_hex(data, 1);
+  console_print("\n");
+
+  console_print("MPIDR_EL1: 0x");
+  size_t mpidr = mpidr_el1();
+  console_print_hex((const void*)&mpidr, pointer_size);
+  console_print("\n");
+  
+  console_print("SCTLR_EL1: 0x");
+  size_t sctlr = sctlr_el1();
+  console_print_hex((const void*)&sctlr, pointer_size);
+  console_print("\n");
+
+  console_print("Architecture: ");
+  console_print(arch_name());
+  console_print("\n");
+
+  console_print("Platform: ");
+  console_print(platform_name());
+  console_print("\n");
+
+  return 0;
 }
 
 int memread_handler(size_t argc, const char *const *argv) {

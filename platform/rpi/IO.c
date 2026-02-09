@@ -3,6 +3,7 @@
 
 #include "platform/rpi/IO.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 static inline void uart_putc(char c) {
@@ -24,3 +25,7 @@ static inline char uart_getc(void) {
 void platform_console_putc(char c) { uart_putc(c); }
 
 char platform_console_getc(void) { return uart_getc(); }
+
+const char* platform_name(void) {
+  return "Raspberry Pi";
+}
