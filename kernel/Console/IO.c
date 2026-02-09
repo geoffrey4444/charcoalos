@@ -92,20 +92,21 @@ void console_print_hex(const void* data, size_t size) {
   uint8_t byte;
   uint8_t lo;
   uint8_t hi;
-  size_t i = 0;
   for (size_t i = size; i > 0; --i) {
     byte = ((char*)data)[i - 1];
     lo = (byte & 15);
     if (lo > 9) {
-      lo += 17;  // A - F
+      lo += ('A' - 10);
+    } else {
+      lo += '0';
     }
-    lo += 48;
 
     hi = ((byte >> 4) & 15);
     if (hi > 9) {
-      hi += 17;  // A - F
+      hi += ('A' - 10);
+    } else {
+      hi += '0';
     }
-    hi += 48;
 
     console_putc(hi);
     console_putc(lo);

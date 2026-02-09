@@ -6,6 +6,7 @@
 #include "unity.h"
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 static char g_tx_buffer[256];
@@ -159,6 +160,16 @@ void test_console_read_line_echo_true_handles_backspace_and_echoes_edits(void) {
   TEST_ASSERT_EQUAL_MEMORY(expected_tx, g_tx_buffer, sizeof(expected_tx));
 }
 
+void test_console_print_hex_outputs_bytes_in_most_significant_first_order(void) {
+  const uint8_t bytes[] = {0xEF, 0xCD, 0xAB, 0x90};
+  const char expected[] = "90ABCDEF";
+
+  console_print_hex(bytes, sizeof(bytes));
+
+  TEST_ASSERT_EQUAL_size_t(sizeof(expected) - 1, g_tx_index);
+  TEST_ASSERT_EQUAL_MEMORY(expected, g_tx_buffer, sizeof(expected) - 1);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_string_length_returns_expected_length);
@@ -172,5 +183,6 @@ int main(void) {
   RUN_TEST(test_console_read_line_truncates_and_null_terminates);
   RUN_TEST(test_console_read_line_echo_false_handles_backspace_without_output);
   RUN_TEST(test_console_read_line_echo_true_handles_backspace_and_echoes_edits);
+  RUN_TEST(test_console_print_hex_outputs_bytes_in_most_significant_first_order);
   return UNITY_END();
 }
