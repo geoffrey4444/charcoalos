@@ -10,6 +10,8 @@
 
 static char g_tx_buffer[512];
 static size_t g_tx_index;
+static size_t g_halt_calls;
+static size_t g_reboot_calls;
 
 void platform_console_putc(char c) {
   if (g_tx_index < sizeof(g_tx_buffer)) {
@@ -33,6 +35,10 @@ const char *arch_name(void) { return "arm64-test"; }
 
 const char *platform_name(void) { return "virt-test"; }
 
+void halt(void) { ++g_halt_calls; }
+
+void platform_reboot(void) { ++g_reboot_calls; }
+
 static void assert_tx_equals(const char *expected) {
   const size_t expected_len = strlen(expected);
   TEST_ASSERT_EQUAL_size_t(expected_len, g_tx_index);
@@ -46,6 +52,8 @@ static void assert_tx_contains(const char *needle) {
 void setUp(void) {
   memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
   g_tx_index = 0;
+  g_halt_calls = 0;
+  g_reboot_calls = 0;
 }
 
 void tearDown(void) {}
@@ -90,14 +98,14 @@ void test_dispatch_command_prints_error_for_unknown_command(void) {
       " could not be recognized. Type help for a list of commands.\r\n");
 }
 
-void test_help_handler_prints_expected_command_list(void) {
+void test_help_handler_prints_all_command_names(void) {
   help_handler(0, NULL);
 
   assert_tx_contains("CharcoalOS available commands:");
-  assert_tx_contains("help");
-  assert_tx_contains("Display this help message");
-  assert_tx_contains("info");
-  assert_tx_contains("Display information for debugging");
+  const size_t number_of_commands = sizeof(commands) / sizeof(commands[0]);
+  for (size_t i = 0; i < number_of_commands; ++i) {
+    assert_tx_contains(commands[i].name);
+  }
 }
 
 void test_dispatch_command_help_prints_expected_command_list(void) {
@@ -127,6 +135,58 @@ void test_info_handler_prints_expected_info_fields(void) {
   assert_tx_contains("Platform: virt-test");
 }
 
+void test_panic_handler_prints_message_and_calls_halt(void) {
+  const int result = panic_handler(0, NULL);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  assert_tx_equals("Sorry, a system error has occurred\r\n\r\n");
+  TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
+}
+
+void test_panic_handler_with_argument_prints_message_argument_and_calls_halt(void) {
+  const char *args[] = {"Error code"};
+  const int result = panic_handler(1, args);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  assert_tx_equals("Sorry, a system error has occurred\r\n\r\nError code\r\n\r\n");
+  TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
+}
+
+void test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt(void) {
+  const char *args[] = {"panic", "Error code"};
+  const int result = panic_handler(2, args);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  assert_tx_equals("Sorry, a system error has occurred\r\n\r\nError code\r\n\r\n");
+  TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
+}
+
+void test_dispatch_command_panic_prints_message_and_calls_halt(void) {
+  char command[] = "panic";
+
+  dispatch_command(command);
+
+  assert_tx_equals("Sorry, a system error has occurred\r\n\r\npanic\r\n\r\n");
+  TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
+}
+
+void test_reboot_handler_calls_platform_reboot(void) {
+  const int result = reboot_handler(0, NULL);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  TEST_ASSERT_EQUAL_size_t(1, g_reboot_calls);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
+}
+
+void test_dispatch_command_reboot_calls_platform_reboot(void) {
+  char command[] = "reboot";
+
+  dispatch_command(command);
+
+  TEST_ASSERT_EQUAL_size_t(1, g_reboot_calls);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
+}
+
 void test_dispatch_command_info_prints_expected_info_fields(void) {
   char command[] = "info";
 
@@ -148,10 +208,16 @@ int main(void) {
   RUN_TEST(test_tokenize_command_splits_whitespace_and_rewrites_separators);
   RUN_TEST(test_dispatch_command_ignores_empty_input);
   RUN_TEST(test_dispatch_command_prints_error_for_unknown_command);
-  RUN_TEST(test_help_handler_prints_expected_command_list);
+  RUN_TEST(test_help_handler_prints_all_command_names);
   RUN_TEST(test_dispatch_command_help_prints_expected_command_list);
   RUN_TEST(test_info_handler_prints_expected_info_fields);
   RUN_TEST(test_dispatch_command_info_prints_expected_info_fields);
+  RUN_TEST(test_panic_handler_prints_message_and_calls_halt);
+  RUN_TEST(test_panic_handler_with_argument_prints_message_argument_and_calls_halt);
+  RUN_TEST(test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt);
+  RUN_TEST(test_dispatch_command_panic_prints_message_and_calls_halt);
+  RUN_TEST(test_reboot_handler_calls_platform_reboot);
+  RUN_TEST(test_dispatch_command_reboot_calls_platform_reboot);
   RUN_TEST(test_print_prompt_outputs_expected_prompt);
   return UNITY_END();
 }
