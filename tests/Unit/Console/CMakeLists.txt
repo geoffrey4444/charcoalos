@@ -28,14 +28,18 @@ if(COMMAND add_host_unity_test)
     NAME unit-shell
     SOURCES
       ${CMAKE_SOURCE_DIR}/tests/Unit/Console/ShellTest.c
+      ${CMAKE_SOURCE_DIR}/arch/arm64/Halt.c
       ${CMAKE_SOURCE_DIR}/kernel/Console/Shell.c
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.c
       ${CMAKE_SOURCE_DIR}/kernel/String/String.c
+      ${CMAKE_SOURCE_DIR}/platform/rpi/Reboot.c
     DEPENDS
+      ${CMAKE_SOURCE_DIR}/arch/Halt.h
       ${CMAKE_SOURCE_DIR}/kernel/Console/Shell.h
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
       ${CMAKE_SOURCE_DIR}/kernel/String/String.h
-      ${CMAKE_SOURCE_DIR}/platform/IO.h)
+      ${CMAKE_SOURCE_DIR}/platform/IO.h
+      ${CMAKE_SOURCE_DIR}/platform/Reboot.h)
 
   add_host_unity_test(
     NAME unit-arch-info

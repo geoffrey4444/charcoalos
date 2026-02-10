@@ -3,7 +3,8 @@
 
 add_library(platform_rpi OBJECT
   IO.c
-  Info.c)
+  Info.c
+  Reboot.c)
 target_compile_options(platform_rpi PRIVATE
   -ffreestanding
   -fno-builtin)

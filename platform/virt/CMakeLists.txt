@@ -3,7 +3,8 @@
 
 add_library(platform_virt OBJECT
   IO.c
-  Info.c)
+  Info.c
+  Reboot.c)
 target_compile_options(platform_virt PRIVATE
   -ffreestanding
   -fno-builtin)

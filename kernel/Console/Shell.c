@@ -2,11 +2,13 @@
 // See LICENSE.txt for details.
 
 #include "arch/Info.h"
+#include "arch/Halt.h"
 #include "kernel/Console/IO.h"
 #include "kernel/Console/Shell.h"
 #include "kernel/String/String.h"
 #include "platform/IO.h"
 #include "platform/Info.h"
+#include "platform/Reboot.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -114,16 +116,16 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print("\n");
 
   console_print("Compiler: ");
-  #if defined(__clang__)
+#if defined(__clang__)
   console_print("clang\n");
-  #elif defined(__GNUC__)
+#elif defined(__GNUC__)
   console_print("gcc\n");
-  #else
+#else
   console_print("Unknown");
-  #endif
+#endif
 
   console_print("Pointer size (bytes): 0x");
-  const size_t pointer_size = sizeof(void*);
+  const size_t pointer_size = sizeof(void *);
   data[0] = pointer_size;
   console_print_hex(data, 1);
   console_print("\n");
@@ -137,11 +139,11 @@ int info_handler(size_t argc, const char *const *argv) {
 
   console_print("MMIO base address: 0x");
   uintptr_t mmio_address = mmio_base_address();
-  console_print_hex((const void*)&mmio_address, pointer_size);
+  console_print_hex((const void *)&mmio_address, pointer_size);
   console_print("\n");
   console_print("UART base address: 0x");
   uintptr_t uart_address = uart_base_address();
-  console_print_hex((const void*)&uart_address, pointer_size);
+  console_print_hex((const void *)&uart_address, pointer_size);
   console_print("\n");
 
   console_print("Current exception level: 0x");
@@ -151,12 +153,12 @@ int info_handler(size_t argc, const char *const *argv) {
 
   console_print("MPIDR_EL1: 0x");
   size_t mpidr = mpidr_el1();
-  console_print_hex((const void*)&mpidr, pointer_size);
+  console_print_hex((const void *)&mpidr, pointer_size);
   console_print("\n");
-  
+
   console_print("SCTLR_EL1: 0x");
   size_t sctlr = sctlr_el1();
-  console_print_hex((const void*)&sctlr, pointer_size);
+  console_print_hex((const void *)&sctlr, pointer_size);
   console_print("\n");
 
   console_print("Architecture: ");
@@ -173,15 +175,30 @@ int info_handler(size_t argc, const char *const *argv) {
 int memread_handler(size_t argc, const char *const *argv) {
   (void)argc;
   (void)argv;
+  // for (size_t i = 1; i < argc; ++i) {
+  //   uintptr_t address = (uintptr_t)argv[i];
+  //   console_print_hex((const void*)&address, 8);
+  //   console_print("    ");
+  //   size_t contents = (size_t)*(argv[i]);
+  //   console_print_hex((const void*)&contents, 8);
+  // }
   console_print("Command not yet implemented\n");
   return 1;
+}
+
+int panic_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
+  console_print("Sorry, a system error has occurred.\n\n");
+  halt();
+  return 0;
 }
 
 int reboot_handler(size_t argc, const char *const *argv) {
   (void)argc;
   (void)argv;
-  console_print("Command not yet implemented\n");
-  return 1;
+  platform_reboot();
+  return 0;
 }
 
 int registers_handler(size_t argc, const char *const *argv) {

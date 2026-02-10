@@ -30,6 +30,7 @@ struct shell_command {
 int help_handler(size_t argc, const char *const *argv);
 int info_handler(size_t argc, const char *const *argv);
 int memread_handler(size_t argc, const char *const *argv);
+int panic_handler(size_t argc, const char *const *argv);
 int reboot_handler(size_t argc, const char *const *argv);
 int registers_handler(size_t argc, const char *const *argv);
 
@@ -40,6 +41,7 @@ static const struct shell_command commands[] = {
     {"help", "Display this help message", help_handler},
     {"info", "Display information for debugging", info_handler},
     {"memread", "Read memory at address", memread_handler},
+    {"panic", "Panic the kernel", panic_handler},
     {"reboot", "Reboot the system", reboot_handler},
     {"regs", "Show system registers", registers_handler},
 };
