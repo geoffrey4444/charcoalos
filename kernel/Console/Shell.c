@@ -87,6 +87,19 @@ void print_prompt(void) { console_print("> "); }
 
 // Handlers for built-in commands
 
+int add_handler(size_t argc, const char *const *argv) {
+  if (argc != 3) {
+    console_print("Usage: add 0x1234 0xdbca\n");
+    return 1;
+  }
+  uint64_t a = console_uint64_from_hex(argv[1]);
+  uint64_t b = console_uint64_from_hex(argv[2]);
+  uint64_t result = a + b;
+  console_print_hex((const void*)&result, 8);
+  console_print("\n");
+  return 0;
+}
+
 int help_handler(size_t argc, const char *const *argv) {
   // Arguments are unused
   (void)argc;

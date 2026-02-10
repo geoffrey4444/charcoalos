@@ -27,6 +27,7 @@ struct shell_command {
  * \param argc Number of arguments (including the command name)
  * \param argv The command arguments (including the command name)
  */
+int add_handler(size_t argc, const char *const *argv);
 int help_handler(size_t argc, const char *const *argv);
 int info_handler(size_t argc, const char *const *argv);
 int memread_handler(size_t argc, const char *const *argv);
@@ -38,6 +39,7 @@ int registers_handler(size_t argc, const char *const *argv);
  * \brief The table of built-in shell commands
  */
 static const struct shell_command commands[] = {
+    {"add", "Add two unsigned hex numbers", add_handler},
     {"help", "Display this help message", help_handler},
     {"info", "Display information for debugging", info_handler},
     {"memread", "Read memory at address", memread_handler},

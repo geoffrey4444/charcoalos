@@ -113,3 +113,30 @@ void console_print_hex(const void* data, size_t size) {
   }
   return;
 }
+
+uint64_t console_uint64_from_hex(const char* digits) {
+  uint64_t result = 0;
+  size_t i = 0;
+  size_t max_chars = 16;  // 64 bit = 8 byte, 2 hex chars / byte
+  // Skip optional 0x prefix
+  if (digits[0] == '0') {
+    if ((digits[1] == 'x') || (digits[1] == 'X')) {
+      max_chars += 2;
+      i = 2;
+    }
+  }
+  while ((digits[i] != '\0') && (i < max_chars)) {
+    if ((digits[i] >= '0') && (digits[i] <= '9')) {
+      result = (result << 4) | (digits[i] - '0');
+    } else if ((digits[i] >= 'A') && (digits[i] <= 'F')) {
+      result = (result << 4) | (digits[i] - 'A' + 10);
+    } else if ((digits[i] >= 'a') && (digits[i] <= 'f')) {
+      result = (result << 4) | (digits[i] - 'a' + 10);
+    } else {
+      // Non-digit character encountered; stop here
+      return result;
+    }
+    ++i;
+  }
+  return result;
+}

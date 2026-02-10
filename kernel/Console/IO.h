@@ -20,14 +20,14 @@ void console_putc(char c);
  * \details First calls `string_length()` and then uses `console_write()`.
  * \param text The string to print.
  */
-void console_print(const char* text);
+void console_print(const char *text);
 
 /*!
  * \brief Writes a string `buffer` of size `size` to the serial console.
  * \param buffer The string to write.
  * \param size The number of bytes to write.
  */
-void console_write(const char* buffer, size_t size);
+void console_write(const char *buffer, size_t size);
 
 /*!
  * \brief Reads a single character from the serial console.
@@ -42,7 +42,7 @@ char console_getc(void);
  * \param buffer The buffer to hold the text input.
  * \param size The size in bytes of the buffer holding the input.
  */
-void console_read(char* buffer, size_t size);
+void console_read(char *buffer, size_t size);
 
 /*!
  * \brief Reads a line from the serial console.
@@ -53,11 +53,26 @@ void console_read(char* buffer, size_t size);
  * \param size The size in bytes of the buffer holding the input.
  * \param echo Whether or not to also echo the input to the console.
  */
-void console_read_line(char* buffer, size_t size, bool echo);
+void console_read_line(char *buffer, size_t size, bool echo);
 
 /*!
  * \brief Prints data as a hex string
  * \param data The bytes to print as hex
  * \param size The size of the data to print in bytes
  */
-void console_print_hex(const void* data, size_t size);
+void console_print_hex(const void *data, size_t size);
+
+/*! 
+ * \brief Returns a 64-bit unsigned integer from a hex string
+ * \details Converts string character-by-character into a uint64_t.
+ * The first 16 characters (after optional 0x or 0X prefix) are interpreted as 
+ * hex digits.
+ * 
+ * The function returns the accumulated total once all digits
+ * have been parsed (starting with the most significant digit),
+ * when the first non-hex character is encountered,
+ * or when 16 digits have been parsed.
+ * \param digits The string containing the hex deigits
+ * \returns The numerical value of the digits as uint64_t
+ */
+ uint64_t console_uint64_from_hex(const char *digits);
