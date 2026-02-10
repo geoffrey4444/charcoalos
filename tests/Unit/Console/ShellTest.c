@@ -196,6 +196,32 @@ void test_dispatch_command_info_prints_expected_info_fields(void) {
   assert_tx_contains("Platform: virt-test");
 }
 
+void test_add_handler_prints_hex_sum_for_two_arguments(void) {
+  const char *args[] = {"add", "0x1A", "0x05"};
+
+  const int result = add_handler(3, args);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  assert_tx_equals("000000000000001F\r\n");
+}
+
+void test_add_handler_with_wrong_argument_count_prints_usage_and_fails(void) {
+  const char *args[] = {"add", "0x1A"};
+
+  const int result = add_handler(2, args);
+
+  TEST_ASSERT_EQUAL_INT(1, result);
+  assert_tx_equals("Usage: add 0x1234 0xdbca\r\n");
+}
+
+void test_dispatch_command_add_prints_sum(void) {
+  char command[] = "add 0x10 0x20";
+
+  dispatch_command(command);
+
+  assert_tx_equals("0000000000000030\r\n");
+}
+
 void test_print_prompt_outputs_expected_prompt(void) {
   print_prompt();
 
@@ -218,6 +244,9 @@ int main(void) {
   RUN_TEST(test_dispatch_command_panic_prints_message_and_calls_halt);
   RUN_TEST(test_reboot_handler_calls_platform_reboot);
   RUN_TEST(test_dispatch_command_reboot_calls_platform_reboot);
+  RUN_TEST(test_add_handler_prints_hex_sum_for_two_arguments);
+  RUN_TEST(test_add_handler_with_wrong_argument_count_prints_usage_and_fails);
+  RUN_TEST(test_dispatch_command_add_prints_sum);
   RUN_TEST(test_print_prompt_outputs_expected_prompt);
   return UNITY_END();
 }

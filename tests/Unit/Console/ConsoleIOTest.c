@@ -170,6 +170,26 @@ void test_console_print_hex_outputs_bytes_in_most_significant_first_order(void) 
   TEST_ASSERT_EQUAL_MEMORY(expected, g_tx_buffer, sizeof(expected) - 1);
 }
 
+void test_console_uint64_from_hex_parses_prefixed_and_unprefixed_values(void) {
+  TEST_ASSERT_EQUAL_HEX64(0x1A2B3C4D5E6F7890ULL,
+                          console_uint64_from_hex("0x1A2B3C4D5E6F7890"));
+  TEST_ASSERT_EQUAL_HEX64(0x1A2B3C4D5E6F7890ULL,
+                          console_uint64_from_hex("1A2B3C4D5E6F7890"));
+  TEST_ASSERT_EQUAL_HEX64(0xABCDEFULL, console_uint64_from_hex("0Xabcdef"));
+}
+
+void test_console_uint64_from_hex_stops_at_first_non_hex_character(void) {
+  TEST_ASSERT_EQUAL_HEX64(0x123ULL, console_uint64_from_hex("0x123g456"));
+  TEST_ASSERT_EQUAL_HEX64(0x0ULL, console_uint64_from_hex("xyz"));
+}
+
+void test_console_uint64_from_hex_limits_input_to_16_hex_digits(void) {
+  TEST_ASSERT_EQUAL_HEX64(0x123456789ABCDEF0ULL,
+                          console_uint64_from_hex("123456789ABCDEF0FF"));
+  TEST_ASSERT_EQUAL_HEX64(0x123456789ABCDEF0ULL,
+                          console_uint64_from_hex("0x123456789ABCDEF0FF"));
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_string_length_returns_expected_length);
@@ -184,5 +204,8 @@ int main(void) {
   RUN_TEST(test_console_read_line_echo_false_handles_backspace_without_output);
   RUN_TEST(test_console_read_line_echo_true_handles_backspace_and_echoes_edits);
   RUN_TEST(test_console_print_hex_outputs_bytes_in_most_significant_first_order);
+  RUN_TEST(test_console_uint64_from_hex_parses_prefixed_and_unprefixed_values);
+  RUN_TEST(test_console_uint64_from_hex_stops_at_first_non_hex_character);
+  RUN_TEST(test_console_uint64_from_hex_limits_input_to_16_hex_digits);
   return UNITY_END();
 }
