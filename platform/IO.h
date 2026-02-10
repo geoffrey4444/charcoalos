@@ -21,7 +21,5 @@ char platform_console_getc(void);
 
 /*!
  * \brief Returns the name of the platform
- * \param name The name of the platform
- * \param size The maximum size that name cna hold
  */
 const char* platform_name(void);
