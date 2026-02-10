@@ -6,6 +6,9 @@ This repo holds some code to help me learn about kernels, inspired by tutorials 
 
 Starting from a minimal "hello world" kernel that runs either in [QEMU](https://www.qemu.org) virtually or on the [Raspberry Pi](https://www.raspberrypi.com), I am gradually building up code to do kernel-type things (memory, files, hardware, ...).
 
+## Please don't try to use this OS for anything at all important
+This repo is to help me learn how operating systems work. That means I don't yet know, which means I'll probably make mistakes, including mistakes with security implications. I'll do my best as I go to learn how to avoid introducing security vulnerabilities. And anyway, this code is a long, long way from being useful for much of anything. Even so, if you happened to find this repo, and for some reason you felt inclined to try to run it, please don't try to use it on any production system or in any situation where correctness, security, etc. matter.
+
 ## Dependencies
 - [Unity](https://github.com/ThrowTheSwitch/Unity) (for host-side unit testing)
   - If missing at `third_party/unity`, CMake can fetch it from the official source during configure (`CHARCOALOS_FETCH_UNITY=ON` by default).
