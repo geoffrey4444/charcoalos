@@ -32,6 +32,8 @@ size_t mpidr_el1(void) { return (size_t)0xA1B2C3D4u; }
 
 size_t sctlr_el1(void) { return (size_t)0x0F0E0D0Cu; }
 
+uintptr_t stack_pointer_address(void) { return (uintptr_t)0xCAFEBABEu; }
+
 const char *arch_name(void) { return "arm64-test"; }
 
 const char *platform_name(void) { return "virt-test"; }
@@ -117,7 +119,7 @@ void test_dispatch_command_help_prints_expected_command_list(void) {
   assert_tx_contains("CharcoalOS available commands:");
   assert_tx_contains("memread");
   assert_tx_contains("reboot");
-  assert_tx_contains("regs");
+  assert_tx_contains("add");
 }
 
 void test_info_handler_prints_expected_info_fields(void) {

@@ -33,7 +33,6 @@ int info_handler(size_t argc, const char *const *argv);
 int memread_handler(size_t argc, const char *const *argv);
 int panic_handler(size_t argc, const char *const *argv);
 int reboot_handler(size_t argc, const char *const *argv);
-int registers_handler(size_t argc, const char *const *argv);
 
 /*!
  * \brief The table of built-in shell commands
