@@ -24,4 +24,12 @@ size_t mpidr_el1(void);
  */
 size_t sctlr_el1(void);
 
+/*!
+ * \brief Returns the name of the architecture.
+ */
 const char* arch_name(void);
+
+/*!
+ * \brief Returns the address of the stack pointer.
+ */
+uintptr_t stack_pointer_address(void);

@@ -44,9 +44,7 @@ static const struct shell_command commands[] = {
     {"info", "Display information for debugging", info_handler},
     {"memread", "Read memory at address", memread_handler},
     {"panic", "Panic the kernel", panic_handler},
-    {"reboot", "Reboot the system", reboot_handler},
-    {"regs", "Show system registers", registers_handler},
-};
+    {"reboot", "Reboot the system", reboot_handler}};
 
 /*!
  * \brief Function to tokenize a command entered on the command line

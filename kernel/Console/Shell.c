@@ -95,7 +95,7 @@ int add_handler(size_t argc, const char *const *argv) {
   uint64_t a = console_uint64_from_hex(argv[1]);
   uint64_t b = console_uint64_from_hex(argv[2]);
   uint64_t result = a + b;
-  console_print_hex((const void*)&result, 8);
+  console_print_hex((const void *)&result, 8);
   console_print("\n");
   return 0;
 }
@@ -159,6 +159,11 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print_hex((const void *)&uart_address, pointer_size);
   console_print("\n");
 
+  console_print("Stack pointer: 0x");
+  uintptr_t stack_pointer = stack_pointer_address();
+  console_print_hex((const void *)&stack_pointer, pointer_size);
+  console_print("\n");
+
   console_print("Current exception level: 0x");
   data[0] = current_exception_level();
   console_print_hex(data, 1);
@@ -186,17 +191,15 @@ int info_handler(size_t argc, const char *const *argv) {
 }
 
 int memread_handler(size_t argc, const char *const *argv) {
-  (void)argc;
-  (void)argv;
-  // for (size_t i = 1; i < argc; ++i) {
-  //   uintptr_t address = (uintptr_t)argv[i];
-  //   console_print_hex((const void*)&address, 8);
-  //   console_print("    ");
-  //   size_t contents = (size_t)*(argv[i]);
-  //   console_print_hex((const void*)&contents, 8);
-  // }
-  console_print("Command not yet implemented\n");
-  return 1;
+  for (size_t i = 1; i < argc; ++i) {
+    uintptr_t address = (uintptr_t)console_uint64_from_hex(argv[i]);
+    console_print_hex((const void *)&address, 8);
+    console_print("    ");
+    size_t contents = *((size_t *)address);
+    console_print_hex((const void *)&contents, 8);
+    console_print("\n");
+  }
+  return 0;
 }
 
 int panic_handler(size_t argc, const char *const *argv) {
@@ -223,9 +226,3 @@ int reboot_handler(size_t argc, const char *const *argv) {
   return 0;
 }
 
-int registers_handler(size_t argc, const char *const *argv) {
-  (void)argc;
-  (void)argv;
-  console_print("Command not yet implemented\n");
-  return 1;
-}
