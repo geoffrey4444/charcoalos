@@ -20,6 +20,10 @@ void test_sctlr_el1_returns_zero_on_host(void) {
   TEST_ASSERT_EQUAL_HEX64((uint64_t)0, (uint64_t)sctlr_el1());
 }
 
+void test_stack_pointer_address_returns_zero_on_host(void) {
+  TEST_ASSERT_EQUAL_HEX64((uint64_t)0, (uint64_t)stack_pointer_address());
+}
+
 void test_arch_name_returns_arm64(void) {
   TEST_ASSERT_EQUAL_STRING("arm64", arch_name());
 }
@@ -29,6 +33,7 @@ int main(void) {
   RUN_TEST(test_current_exception_level_returns_zero_on_host);
   RUN_TEST(test_mpidr_el1_returns_zero_on_host);
   RUN_TEST(test_sctlr_el1_returns_zero_on_host);
+  RUN_TEST(test_stack_pointer_address_returns_zero_on_host);
   RUN_TEST(test_arch_name_returns_arm64);
   return UNITY_END();
 }

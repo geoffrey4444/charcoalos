@@ -4,6 +4,7 @@
 #include "kernel/Console/Shell.h"
 #include "unity.h"
 
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -196,6 +197,26 @@ void test_dispatch_command_info_prints_expected_info_fields(void) {
   assert_tx_contains("Platform: virt-test");
 }
 
+void test_memread_handler_prints_address_and_contents(void) {
+  const size_t value = 0x0123456789ABCDEFu;
+  char address_text[32] = {0};
+  char expected[64] = {0};
+  const int address_len =
+      snprintf(address_text, sizeof(address_text), "0x%llX",
+               (unsigned long long)(uintptr_t)&value);
+  TEST_ASSERT_TRUE(address_len > 0);
+  const char *args[] = {"memread", address_text};
+
+  const int result = memread_handler(2, args);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  const int expected_len =
+      snprintf(expected, sizeof(expected), "%016llX    %016llX\r\n",
+               (unsigned long long)(uintptr_t)&value, (unsigned long long)value);
+  TEST_ASSERT_TRUE(expected_len > 0);
+  assert_tx_equals(expected);
+}
+
 void test_add_handler_prints_hex_sum_for_two_arguments(void) {
   const char *args[] = {"add", "0x1A", "0x05"};
 
@@ -244,6 +265,7 @@ int main(void) {
   RUN_TEST(test_dispatch_command_panic_prints_message_and_calls_halt);
   RUN_TEST(test_reboot_handler_calls_platform_reboot);
   RUN_TEST(test_dispatch_command_reboot_calls_platform_reboot);
+  RUN_TEST(test_memread_handler_prints_address_and_contents);
   RUN_TEST(test_add_handler_prints_hex_sum_for_two_arguments);
   RUN_TEST(test_add_handler_with_wrong_argument_count_prints_usage_and_fails);
   RUN_TEST(test_dispatch_command_add_prints_sum);
