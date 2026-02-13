@@ -27,13 +27,13 @@ SECTIONS {
     . = ALIGN(8);
     __bss_end = .;
   } :data
-                                 /* common symbols at link time, e.g. */
-                                 /* global scope symbols, in COMMON */
+         /* common symbols at link time, e.g. */
+         /* global scope symbols, in COMMON */
 				 /* i.e. COMMON is tentative definitions */
 				 /* bss = zero-initialized globals/statics */
 				 /* not zeroed unless my startup code does */
-				 
 				 /* round locations to multiple of 8 bytes */
+
   .stack (NOLOAD) : {
     . = ALIGN(16);               /* stack pointer should be 16-byte aligned */
                                  /* at call boundaries */

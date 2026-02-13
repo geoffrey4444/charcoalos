@@ -8,16 +8,18 @@ SECTIONS {
                                  /* of assembled boot.s before anything else */
 				 /* in RAM. */
   .text : { *(.text .text.*) }   /* all code */
-  .data : { *(.data) }           /* data that isn't code...might be strings? */
   .rodata : { *(.rodata .rodata.*) } /* string literal ("Hello...") in here */
+  .data : { *(.data) }           /* data that isn't code...might be strings? */
+  __bss_start = .;
   .bss : { *(.bss COMMON) }      /* common symbols at link time, e.g. */
                                  /* global scope symbols, in COMMON */
 				 /* i.e. COMMON is tentative definitions */
 				 /* bss = zero-initialized globals/statics */
 				 /* not zeroed unless my startup code does */
 				 /* round locations to multiple of 8 bytes */
+  __bss_end = .;
   . = ALIGN(16);                 /* stack pointer should be 16-byte aligned */
                                  /* at call boundaries */
   . += 0x4000; /* Set up 16kB stack memory: move counter up 4kB */
-  stack_top = .; /* define stack_top for boot code as 0x40101000*/
+  __stack_top = .; /* define stack_top for boot code as 0x40101000*/
 }
