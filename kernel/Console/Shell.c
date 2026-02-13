@@ -187,6 +187,18 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print(platform_name());
   console_print("\n");
 
+  console_print("2.0 (hex): 0x");
+  const double x = 3.125;  
+  console_print_hex((void *)&x, 8);
+  console_print("\n");
+
+  console_print("sqrt(2): 0x");
+  double y = 2.0;
+  __asm__ volatile("fsqrt %d0, %d1" : "=w"(y) : "w"(y));
+  // inline assembly to take hardware sqrt, since no math.h yet
+  console_print_hex((void *)&y, 8);
+  console_print("\n");
+
   return 0;
 }
 
