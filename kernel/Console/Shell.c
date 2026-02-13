@@ -187,7 +187,7 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print(platform_name());
   console_print("\n");
 
-  console_print("2.0 (hex): 0x");
+  console_print("3.125 (hex): 0x");
   const double x = 3.125;  
   console_print_hex((void *)&x, 8);
   console_print("\n");
