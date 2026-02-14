@@ -24,7 +24,7 @@ set(required_symbols
     "kmain"
     "console_print"
     "platform_console_putc"
-    "stack_top")
+    "__stack_top")
 
 foreach(sym IN LISTS required_symbols)
   if(NOT dump_out MATCHES "(^|[^A-Za-z0-9_])${sym}([^A-Za-z0-9_]|$)")
