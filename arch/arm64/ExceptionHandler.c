@@ -206,7 +206,22 @@ static const char *exception_class_to_string(uint64_t exception_class) {
   }
 }
 
+// Flag to stop a cascade of recursive exceptions
+static volatile uint64_t g_exception_in_progress = 0;
+
 void handle_exception(uint64_t *saved_registers, uint64_t kind_of_exception) {
+  // If this is an exception that triggered after another exception, just halt
+  // Uses a compiler built-in to check if there's already an exception in
+  // progress. atomic relaxed means no cross-thread ordering guarantees
+  // beyond this single variable.
+  if (__atomic_test_and_set((volatile void *)&g_exception_in_progress,
+                            __ATOMIC_RELAXED)) {
+    // Nested exception: do not print, just stop immediately.
+    halt();
+  }
+
+  g_exception_in_progress = 1;
+
   // Later on, some errors could be handled and recovered from, but for now,
   // just print error information and panic, regardless of the type
   console_print("\n\nSorry, a system error has occurred.\n");

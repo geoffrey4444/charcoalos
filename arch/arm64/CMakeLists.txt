@@ -7,6 +7,7 @@ add_library(arch_arm64 OBJECT
   Halt.c
   Info.c)
 target_compile_options(arch_arm64 PRIVATE
+  -mno-outline-atomics
   -ffreestanding
   -fno-builtin)
 target_include_directories(arch_arm64 PRIVATE

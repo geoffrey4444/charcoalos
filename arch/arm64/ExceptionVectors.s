@@ -127,6 +127,11 @@ EXCEPTION_ENTRY serr_el0_a32
   // void handle_exception(uint64_t* saved_registers, uint64_t kind_of_exception)
   // to handle the exception. The saved registers will be in saved_registers[i].
   bl handle_exception
+
+  // Infinite loop after exception returns, if it does. Should not get here
+  2:
+    wfe
+    b 2b
 .endm
 
 // Now define all the handlers (labels that get jumped to from the
@@ -166,3 +171,7 @@ fiq_el0_a32:
   EXCEPTION_HANDLER 14
 serr_el0_a32:
   EXCEPTION_HANDLER 15
+// Should not get here, but if you do, just infinite loop
+1:
+  wfe
+  b 1b

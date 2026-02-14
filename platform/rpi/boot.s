@@ -21,19 +21,27 @@ _start:
 	 b  1b               // if event never comes, it sleeps forever, but on event, it just goes back to sleep after wake
 	                     // "polite" way to park a core
 0:	
-	// Zero bss
-	ldr x5, =__bss_start
-	ldr x6, =__bss_end
-
-	// 1: sets a label... jump to it as
-	// 1b (move backwards to next 1: label) or 1f
-	// (move forward)
-2:	cmp x5, x6
-	b.hs 3f              // HS is >= ... i.e. if x5 >= x6, done, jump to 3f
-
-	str xzr, [x5], #8    // store 8 bytes of zero (64 bits), then x5 += 8
-	b 2b                 // jump backwards to 2:
-3:
+	// Zero bss safely even when __bss_start is not 8-byte aligned.
+	ldr x5, =__bss_start  // x5 = current write pointer (start of .bss)
+	ldr x6, =__bss_end    // x6 = end pointer (one past end of .bss)
+2:	cmp x5, x6           // if current >= end, zeroing is done
+	b.hs 6f               // branch to label 6 when no bytes remain
+	tst x5, #7            // test low 3 address bits: aligned iff (x5 % 8) == 0
+	b.eq 3f               // if already 8-byte aligned, switch to bulk loop
+	strb wzr, [x5], #1    // store one zero byte, then advance pointer by 1
+	b 2b                  // keep clearing head bytes until aligned or done
+3:	sub x7, x6, x5       // x7 = remaining byte count
+	cmp x7, #8            // check whether at least one 8-byte chunk remains
+	b.lo 5f               // if fewer than 8 bytes remain, skip to tail-byte loop
+4:	str xzr, [x5], #8    // store 8 zero bytes, then advance pointer by 8
+	sub x7, x7, #8        // decrement remaining-byte counter
+	cmp x7, #8            // check if another full 8-byte chunk remains
+	b.hs 4b               // continue bulk 8-byte clearing while possible
+5:	cmp x5, x6           // check whether any tail bytes still remain
+	b.hs 6f               // if none remain, finish
+	strb wzr, [x5], #1    // clear one remaining tail byte
+	b 5b                  // continue tail-byte clearing to the end
+6:
   // In EL2:
   // CPTR_EL2.TFP (bit 10) = 0  => don’t trap FP/SIMD to EL2
   // CPTR_EL2.TCPAC (bit 31) = 0 => don’t trap CPACR_EL1 accesses
@@ -108,4 +116,3 @@ start_el1:
 halt:
 	wfe
 	b halt
-
