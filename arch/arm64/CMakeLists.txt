@@ -2,6 +2,8 @@
 # See LICENSE.txt for details.
 
 add_library(arch_arm64 OBJECT
+  ExceptionHandler.c
+  ExceptionVectors.s
   Halt.c
   Info.c)
 target_compile_options(arch_arm64 PRIVATE

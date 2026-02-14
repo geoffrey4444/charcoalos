@@ -215,7 +215,7 @@ int memread_handler(size_t argc, const char *const *argv) {
 }
 
 int panic_handler(size_t argc, const char *const *argv) {
-  console_print("Sorry, a system error has occurred\n\n");
+  console_print("Kernel panic\n\n");
   const char *panic_message = NULL;
   if ((argc > 1) && (argv != NULL)) {
     panic_message = argv[1];

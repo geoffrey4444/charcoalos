@@ -142,7 +142,7 @@ void test_panic_handler_prints_message_and_calls_halt(void) {
   const int result = panic_handler(0, NULL);
 
   TEST_ASSERT_EQUAL_INT(0, result);
-  assert_tx_equals("Sorry, a system error has occurred\r\n\r\n");
+  assert_tx_equals("Kernel panic\r\n\r\n");
   TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
 }
 
@@ -151,7 +151,7 @@ void test_panic_handler_with_argument_prints_message_argument_and_calls_halt(voi
   const int result = panic_handler(1, args);
 
   TEST_ASSERT_EQUAL_INT(0, result);
-  assert_tx_equals("Sorry, a system error has occurred\r\n\r\nError code\r\n\r\n");
+  assert_tx_equals("Kernel panic\r\n\r\nError code\r\n\r\n");
   TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
 }
 
@@ -160,7 +160,7 @@ void test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt
   const int result = panic_handler(2, args);
 
   TEST_ASSERT_EQUAL_INT(0, result);
-  assert_tx_equals("Sorry, a system error has occurred\r\n\r\nError code\r\n\r\n");
+  assert_tx_equals("Kernel panic\r\n\r\nError code\r\n\r\n");
   TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
 }
 
@@ -169,7 +169,7 @@ void test_dispatch_command_panic_prints_message_and_calls_halt(void) {
 
   dispatch_command(command);
 
-  assert_tx_equals("Sorry, a system error has occurred\r\n\r\npanic\r\n\r\n");
+  assert_tx_equals("Kernel panic\r\n\r\npanic\r\n\r\n");
   TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
 }
 

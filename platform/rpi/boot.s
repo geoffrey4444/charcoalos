@@ -84,6 +84,12 @@ _start:
 	eret                  // exception return: drop to EL1
 
 start_el1:
+  // Set up exception handlers, defined in arch/arm64/ExceptionVectors.s.
+	// This is done by setting the address of the exception vector table to
+	// the system register VBAR_EL1.
+	ldr x5, =_exception_vectors_el1
+	msr vbar_el1, x5     // msr = write to system register
+
 	// Enable floating point
 	// Why enable early? I know numerical algorithms, and I might want to
 	// try out some floating point in the kernel

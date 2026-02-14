@@ -23,7 +23,8 @@ if(NOT CMAKE_C_COMPILER)
       "C compiler for CharcoalOS" FORCE)
 endif()
 
-project(charcoalos LANGUAGES C)
+project(charcoalos LANGUAGES C ASM)
+enable_language(ASM)
 include(CTest)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

@@ -36,6 +36,11 @@ _start:
 	str xzr, [x5], #8    // store 8 bytes of zero (64 bits), then x5 += 8
 	b 2b                 // jump backwards to 2:
 3:
+  // Set up exception handlers, defined in arch/arm64/ExceptionVectors.s.
+	// This is done by setting the address of the exception vector table to
+	// the system register VBAR_EL1.
+	ldr x5, =_exception_vectors_el1
+	msr vbar_el1, x5     // msr = write to system register
 
 	// Enable floating point
 	// Why enable early? I know numerical algorithms, and I might want to
