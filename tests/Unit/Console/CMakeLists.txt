@@ -48,6 +48,21 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/arch/Info.h)
 
   add_host_unity_test(
+    NAME unit-exception-handler
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/ExceptionHandlerTest.c
+      ${CMAKE_SOURCE_DIR}/arch/arm64/ExceptionHandler.c
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.c
+      ${CMAKE_SOURCE_DIR}/kernel/String/String.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/arch/ExceptionHandler.h
+      ${CMAKE_SOURCE_DIR}/arch/Halt.h
+      ${CMAKE_SOURCE_DIR}/arch/arm64/ExceptionTypes.h
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
+      ${CMAKE_SOURCE_DIR}/kernel/String/String.h
+      ${CMAKE_SOURCE_DIR}/platform/IO.h)
+
+  add_host_unity_test(
     NAME unit-platform-virt-info
     SOURCES
       ${CMAKE_SOURCE_DIR}/tests/Unit/Console/PlatformVirtInfoTest.c

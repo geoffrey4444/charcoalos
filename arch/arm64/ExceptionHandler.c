@@ -56,27 +56,43 @@ static const char *exception_type_string(uint64_t kind_of_exception) {
 // FAR_EL1: Fault address register
 //
 static inline uint64_t read_esr_el1(void) {
+#if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, ESR_EL1" : "=r"(register_value));
   return register_value;
+#else
+  return 0;
+#endif
 }
 
 static inline uint64_t read_elr_el1(void) {
+#if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, ELR_EL1" : "=r"(register_value));
   return register_value;
+#else
+  return 0;
+#endif
 }
 
 static inline uint64_t read_spsr_el1(void) {
+#if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, SPSR_EL1" : "=r"(register_value));
   return register_value;
+#else
+  return 0;
+#endif
 }
 
 static inline uint64_t read_far_el1(void) {
+#if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, FAR_EL1" : "=r"(register_value));
   return register_value;
+#else
+  return 0;
+#endif
 }
 
 static inline uint64_t exception_class_from_esr_el1(uint64_t esr_el1_value) {

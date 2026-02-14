@@ -66,6 +66,20 @@ if(QEMU_SYSTEM_AARCH64)
             -DSMOKE_TIMEOUT_SEC=2
             -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_console_smoke.cmake)
   set_tests_properties(smoke-refactored-virt-console PROPERTIES DEPENDS refactored-virt)
+
+  add_test(
+    NAME smoke-refactored-virt-exception-memread
+    COMMAND ${CMAKE_COMMAND}
+            -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
+            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DQEMU_MACHINE=virt
+            -DQEMU_CPU=max
+            -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
+            -DCOMMAND_TEXT=memread\ 0xFFFFFFFFFFFFFFFF\\n
+            -DEXPECTED_SUBSTRING=Sorry,\ a\ system\ error\ has\ occurred.
+            -DSMOKE_TIMEOUT_SEC=2
+            -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_exception_smoke.cmake)
+  set_tests_properties(smoke-refactored-virt-exception-memread PROPERTIES DEPENDS refactored-virt)
 endif()
 
 find_program(HOST_CC NAMES clang cc gcc)

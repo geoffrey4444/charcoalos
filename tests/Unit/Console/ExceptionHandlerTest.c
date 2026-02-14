@@ -1,0 +1,60 @@
+// Distributed under the MIT license.
+// See LICENSE.txt for details.
+
+#include "arch/ExceptionHandler.h"
+#include "arch/arm64/ExceptionTypes.h"
+#include "unity.h"
+
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
+static char g_tx_buffer[8192];
+static size_t g_tx_index;
+static size_t g_halt_calls;
+
+void platform_console_putc(char c) {
+  if (g_tx_index < sizeof(g_tx_buffer)) {
+    g_tx_buffer[g_tx_index++] = c;
+  }
+}
+
+char platform_console_getc(void) { return '\0'; }
+
+void halt(void) { ++g_halt_calls; }
+
+static void assert_tx_contains(const char *needle) {
+  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, needle));
+}
+
+void setUp(void) {
+  memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
+  g_tx_index = 0;
+  g_halt_calls = 0;
+}
+
+void tearDown(void) {}
+
+void test_handle_exception_prints_diagnostics_and_panics(void) {
+  uint64_t saved_registers[32] = {0};
+  for (uint64_t i = 0; i < 32; ++i) {
+    saved_registers[i] = 0x1000ULL + i;
+  }
+
+  handle_exception(saved_registers, EXCEPTION_TYPE_SYNC_EL1_SPX);
+
+  TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
+  assert_tx_contains("Sorry, a system error has occurred.");
+  assert_tx_contains("Type =  0x0000000000000004 = SYNC_EL1_SPX");
+  assert_tx_contains("Class = 0x0000000000000000 = EXCEPTION_CLASS_UNKNOWN");
+  assert_tx_contains("Saved registers (Register Value):");
+  assert_tx_contains("0x0000000000000000 0x0000000000001000");
+  assert_tx_contains("0x000000000000001F 0x000000000000101F");
+  assert_tx_contains("Kernel panic: your computer must be restarted.");
+}
+
+int main(void) {
+  UNITY_BEGIN();
+  RUN_TEST(test_handle_exception_prints_diagnostics_and_panics);
+  return UNITY_END();
+}
