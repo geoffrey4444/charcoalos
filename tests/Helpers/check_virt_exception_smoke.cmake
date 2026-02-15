@@ -37,7 +37,9 @@ endif()
 set(command_text "${COMMAND_TEXT}")
 string(REPLACE "\\n" "\n" command_text "${command_text}")
 
-set(qemu_input_file "${CMAKE_CURRENT_BINARY_DIR}/qemu_exception_smoke_input.txt")
+string(MD5 command_hash "${COMMAND_TEXT}|${EXPECTED_SUBSTRING}")
+set(qemu_input_file
+    "${CMAKE_CURRENT_BINARY_DIR}/qemu_exception_smoke_input_${command_hash}.txt")
 file(WRITE "${qemu_input_file}" "${command_text}")
 
 execute_process(

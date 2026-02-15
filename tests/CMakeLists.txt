@@ -80,6 +80,48 @@ if(QEMU_SYSTEM_AARCH64)
             -DSMOKE_TIMEOUT_SEC=2
             -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_exception_smoke.cmake)
   set_tests_properties(smoke-refactored-virt-exception-memread PROPERTIES DEPENDS refactored-virt)
+
+  add_test(
+    NAME smoke-refactored-virt-trapsvc-resume
+    COMMAND ${CMAKE_COMMAND}
+            -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
+            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DQEMU_MACHINE=virt
+            -DQEMU_CPU=max
+            -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
+            -DCOMMAND_TEXT=trapsvc\ 0x44\\n
+            -DEXPECTED_SUBSTRING=System\ call\ received:\ 0x0000000000000044
+            -DSMOKE_TIMEOUT_SEC=2
+            -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_exception_smoke.cmake)
+  set_tests_properties(smoke-refactored-virt-trapsvc-resume PROPERTIES DEPENDS refactored-virt)
+
+  add_test(
+    NAME smoke-refactored-virt-trapsvc-restart
+    COMMAND ${CMAKE_COMMAND}
+            -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
+            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DQEMU_MACHINE=virt
+            -DQEMU_CPU=max
+            -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
+            -DCOMMAND_TEXT=trapsvc\ 0x4444\\n
+            -DEXPECTED_SUBSTRING=System\ call\ received:\ 0x4444\ ...\ restart
+            -DSMOKE_TIMEOUT_SEC=2
+            -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_exception_smoke.cmake)
+  set_tests_properties(smoke-refactored-virt-trapsvc-restart PROPERTIES DEPENDS refactored-virt)
+
+  add_test(
+    NAME smoke-refactored-virt-trapsvc-panic
+    COMMAND ${CMAKE_COMMAND}
+            -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
+            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DQEMU_MACHINE=virt
+            -DQEMU_CPU=max
+            -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
+            -DCOMMAND_TEXT=trapsvc\ 0x7777\\n
+            -DEXPECTED_SUBSTRING=Kernel\ panic:\ your\ computer\ must\ be\ restarted.
+            -DSMOKE_TIMEOUT_SEC=2
+            -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_exception_smoke.cmake)
+  set_tests_properties(smoke-refactored-virt-trapsvc-panic PROPERTIES DEPENDS refactored-virt)
 endif()
 
 find_program(HOST_CC NAMES clang cc gcc)
