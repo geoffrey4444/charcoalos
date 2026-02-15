@@ -242,8 +242,17 @@ int reboot_handler(size_t argc, const char *const *argv) {
 }
 
 int trapsvc_handler(size_t argc, const char *const *argv) {
-  (void)argc;
-  (void)argv;
-  __asm__ volatile("svc #0x44");
+  if (argc < 2) {
+    // If no argument specified, pass system call 0x4 by default as a test
+    __asm__ volatile("mov x8, #4");
+    __asm__ volatile("svc #0");
+  } else {
+    // Make a system call with the desired call number
+    const char *digits = argv[1];
+    const uint64_t system_call_requested = console_uint64_from_hex(digits);
+    __asm__ volatile("mov x8, %0" : : "r"(system_call_requested) : "x8");
+    __asm__ volatile("svc #0");
+  }
+
   return 0;
 }

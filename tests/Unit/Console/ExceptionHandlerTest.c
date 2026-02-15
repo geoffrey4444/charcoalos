@@ -41,9 +41,10 @@ void test_handle_exception_prints_diagnostics_and_panics(void) {
     saved_registers[i] = 0x1000ULL + i;
   }
 
-  handle_exception(saved_registers, EXCEPTION_TYPE_SYNC_EL1_SPX);
+  uint64_t action =
+      handle_exception(saved_registers, EXCEPTION_TYPE_SYNC_EL1_SPX);
 
-  TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
+  TEST_ASSERT_EQUAL_size_t(action, EXCEPTION_ACTION_PANIC);
   assert_tx_contains("Sorry, a system error has occurred.");
   assert_tx_contains("Type =  0x0000000000000004 = SYNC_EL1_SPX");
   assert_tx_contains("Class = 0x0000000000000000 = EXCEPTION_CLASS_UNKNOWN");

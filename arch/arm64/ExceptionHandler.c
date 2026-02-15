@@ -209,7 +209,39 @@ static const char *exception_class_to_string(uint64_t exception_class) {
 // Flag to stop a cascade of recursive exceptions
 static volatile uint64_t g_exception_in_progress = 0;
 
-void handle_exception(uint64_t *saved_registers, uint64_t kind_of_exception) {
+uint64_t handle_exception(uint64_t *saved_registers,
+                          uint64_t kind_of_exception) {
+  // First, save the state. Registers already saved; save system registers
+  // and basic info about the exception here.
+  const uint64_t esr_el1_value = read_esr_el1();
+  const uint64_t elr_el1_value = read_elr_el1();
+  const uint64_t spsr_value = read_spsr_el1();
+  const uint64_t far_value = read_far_el1();
+  const uint64_t exception_class = exception_class_from_esr_el1(esr_el1_value);
+  const uint64_t iss = iss_from_esr_el1(esr_el1_value);
+
+  // Check if exception can be handled
+  // For now, only handle one exception: svc on aarch64
+  if (exception_class == EXCEPTION_CLASS_SVC_AARCH64) {
+    // By convention, x8 has the system call number
+    const uint64_t system_call_number_requested = saved_registers[8];
+
+    // Eventually, flesh out system call handler. For now, all calls echo
+    // except 0x4444, which reboots, and 0x7777, which panics.
+    if (system_call_number_requested == 0x4444) {
+      console_print("System call received: 0x4444 ... restart\n");
+      return EXCEPTION_ACTION_RESTART;      
+    } else if (system_call_number_requested != 0x7777) {
+      console_print("System call received: 0x");
+      console_print_hex((void *)&system_call_number_requested, 8);
+      console_print("\n");
+      g_exception_in_progress = 0;
+      return EXCEPTION_ACTION_RESUME;
+    }
+  }
+
+  // The exception cannot be handled. So now print diagnostics and panic.
+  // But first, check if already in an exception.
   // If this is an exception that triggered after another exception, just halt
   // Uses a compiler built-in to check if there's already an exception in
   // progress. atomic relaxed means no cross-thread ordering guarantees
@@ -231,12 +263,6 @@ void handle_exception(uint64_t *saved_registers, uint64_t kind_of_exception) {
   console_print(exception_type_string(kind_of_exception));
   console_print("\n");
 
-  const uint64_t esr_el1_value = read_esr_el1();
-  const uint64_t elr_el1_value = read_elr_el1();
-  const uint64_t spsr_value = read_spsr_el1();
-  const uint64_t far_value = read_far_el1();
-  const uint64_t exception_class = exception_class_from_esr_el1(esr_el1_value);
-  const uint64_t iss = iss_from_esr_el1(esr_el1_value);
   console_print("Class = 0x");
   console_print_hex((void *)&exception_class, 8);
   console_print(" = ");
@@ -268,5 +294,5 @@ void handle_exception(uint64_t *saved_registers, uint64_t kind_of_exception) {
 
   // For now, all exceptions are unhandled, so panic
   console_print("Kernel panic: your computer must be restarted.\n");
-  halt();
+  return EXCEPTION_ACTION_PANIC;
 }

@@ -128,8 +128,49 @@ EXCEPTION_ENTRY serr_el0_a32
   // to handle the exception. The saved registers will be in saved_registers[i].
   bl handle_exception
 
-  // Infinite loop after exception returns, if it does. Should not get here
+  // handle_exception returns one of three actions to take next:
+  // 0. Resume
+  // 1. Reboot
+  // 2. Panic (infinite loop)
+  // Function return values are in x0. Check and branch accordingly.
+  // Is action == 0 (resume)?
+  cmp x0, #0
+  beq 0f
+
+  // Is action == 1 (reboot)?
+  cmp x0, #1
+  beq 1f
+
+  // Action must be 2 or something else, so panic
+  b 2f
+
+  0:
+    // Resume: restore registers and return from exception
+    ldp x0, x1, [sp, #0] // load sp + 0, sp + 8 to x0, x1
+    ldp x2, x3, [sp, #16] // load sp + 16, sp + 24 to x2, x3
+    ldp x4, x5, [sp, #32]
+    ldp x6, x7, [sp, #48]
+    ldp x8, x9, [sp, #64]
+    ldp x10, x11, [sp, #80]
+    ldp x12, x13, [sp, #96]
+    ldp x14, x15, [sp, #112]
+    ldp x16, x17, [sp, #128]
+    ldp x18, x19, [sp, #144]
+    ldp x20, x21, [sp, #160]
+    ldp x22, x23, [sp, #176]
+    ldp x24, x25, [sp, #192]
+    ldp x26, x27, [sp, #208]
+    ldp x28, x29, [sp, #224]
+    ldr x30, [sp, #240]
+    add sp, sp, #256 // reset stack pointer to value before this handler
+    eret // return from exception; x30 is return address, sp is stack pointer
+  1:
+    // Reboot: trigger a system reset
+    // To trigger the reboot, call existing C function platform_reboot()
+    bl platform_reboot
+    // Should not return from reboot, but if it does, just continue to panic
   2:
+    // Panic: infinite loop
     wfe
     b 2b
 .endm
@@ -172,6 +213,6 @@ fiq_el0_a32:
 serr_el0_a32:
   EXCEPTION_HANDLER 15
 // Should not get here, but if you do, just infinite loop
-1:
+4:
   wfe
-  b 1b
+  b 4b

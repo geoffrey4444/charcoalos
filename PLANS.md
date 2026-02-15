@@ -27,10 +27,10 @@ This plan is based on what is already working in this repo, and on your backgrou
 3. Decouple kernel control from shell:
    - Move panic/reboot control into kernel APIs (for example, `kernel/Panic`), and keep shell as a client.
    - Move the shell command table out of `Shell.h` into `Shell.c` (or a registration API) to avoid header-level coupling.
-4. Fix command tokenization bounds:
+4. ✅ Fix command tokenization bounds:
    - Enforce `max_tokens` in `tokenize_command` to prevent writes past `tokens[MAX_SHELL_ARGS]`.
    - Add unit coverage for over-limit argument counts.
-5. Remove console layering leak:
+5. ✅ Remove console layering leak:
    - Remove platform-header exposure from `kernel/Console/IO.h`; keep platform dependency inside `kernel/Console/IO.c`.
 6. Split kernel lifecycle from shell loop:
    - Refactor `kmain` into explicit kernel init/run phases so scheduler/process work does not depend on an always-foreground shell loop.
