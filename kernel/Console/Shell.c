@@ -2,17 +2,37 @@
 // See LICENSE.txt for details.
 
 #include "arch/Info.h"
-#include "arch/Halt.h"
 #include "kernel/Console/IO.h"
 #include "kernel/Console/Shell.h"
+#include "kernel/Panic/Panic.h"
+#include "kernel/Panic/Restart.h"
 #include "kernel/String/String.h"
 #include "platform/IO.h"
 #include "platform/Info.h"
-#include "platform/Reboot.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+static const struct shell_command commands[] = {
+    {"add", "Add two unsigned hex numbers", add_handler},
+    {"help", "Display this help message", help_handler},
+    {"info", "Display information for debugging", info_handler},
+    {"memread", "Read memory at address", memread_handler},
+    {"panic", "Panic the kernel", panic_handler},
+    {"reboot", "Reboot the system", reboot_handler},
+    {"trapsvc", "Trigger a svc exception", trapsvc_handler}};
+
+size_t shell_number_of_commands(void) {
+  return sizeof(commands) / sizeof(commands[0]);
+}
+
+struct shell_command shell_command_at(size_t index) {
+  if (index >= shell_number_of_commands()) {
+    kernel_panic("Requested shell command that does not exist");
+  }
+  return commands[index];
+}
 
 size_t tokenize_command(char *command, char *tokens[], size_t max_tokens) {
   if (max_tokens == 0) {
@@ -61,7 +81,7 @@ void dispatch_command(char *command) {
     return;
   }
 
-  const size_t number_of_commands = sizeof(commands) / sizeof(commands[0]);
+  const size_t number_of_commands = shell_number_of_commands();
   int result = 0;
 
   // Loop over available commands, and dispatch if command found
@@ -108,7 +128,7 @@ int help_handler(size_t argc, const char *const *argv) {
   (void)argc;
   (void)argv;
   console_print("CharcoalOS available commands:\n\n");
-  const size_t number_of_commands = sizeof(commands) / sizeof(commands[0]);
+  const size_t number_of_commands = shell_number_of_commands();
   for (size_t i = 0; i < number_of_commands; ++i) {
     console_print(commands[i].name);
     console_print("\t\t");
@@ -225,19 +245,15 @@ int panic_handler(size_t argc, const char *const *argv) {
   } else if ((argc == 1) && (argv != NULL)) {
     panic_message = argv[0];
   }
+  kernel_panic(panic_message);
 
-  if (panic_message != NULL) {
-    console_print(panic_message);
-    console_print("\n\n");
-  }
-  halt();
   return 0;
 }
 
 int reboot_handler(size_t argc, const char *const *argv) {
   (void)argc;
   (void)argv;
-  platform_reboot();
+  kernel_restart();
   return 0;
 }
 
@@ -255,4 +271,16 @@ int trapsvc_handler(size_t argc, const char *const *argv) {
   }
 
   return 0;
+}
+
+#define COMMAND_LENGTH 255
+
+void run_shell_loop(void) {
+  char command[COMMAND_LENGTH];
+  print_prompt();
+  while (true) {
+    console_read_line(command, COMMAND_LENGTH, true);
+    dispatch_command(command);
+    print_prompt();
+  }
 }

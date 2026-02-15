@@ -23,6 +23,20 @@ struct shell_command {
 };
 
 /*!
+ * \brief Returns the number of available shell commands
+ * \returns The number of available shell commands
+ */
+size_t shell_number_of_commands(void);
+
+/*!
+ * \brief Returns the shell command at index `index`, panics if index
+ * is out of bounds.
+ * \param index The index of the command to return
+ * \returns The shell command at index `index`
+ */
+struct shell_command shell_command_at(size_t index);
+
+/*!
  * \brief Function that handles the help shell command
  * \param argc Number of arguments (including the command name)
  * \param argv The command arguments (including the command name)
@@ -34,18 +48,6 @@ int memread_handler(size_t argc, const char *const *argv);
 int panic_handler(size_t argc, const char *const *argv);
 int reboot_handler(size_t argc, const char *const *argv);
 int trapsvc_handler(size_t argc, const char *const *argv);
-
-/*!
- * \brief The table of built-in shell commands
- */
-static const struct shell_command commands[] = {
-    {"add", "Add two unsigned hex numbers", add_handler},
-    {"help", "Display this help message", help_handler},
-    {"info", "Display information for debugging", info_handler},
-    {"memread", "Read memory at address", memread_handler},
-    {"panic", "Panic the kernel", panic_handler},
-    {"reboot", "Reboot the system", reboot_handler},
-    {"trapsvc", "Trigger a svc exception", trapsvc_handler}};
 
 /*!
  * \brief Function to tokenize a command entered on the command line
@@ -70,3 +72,9 @@ void dispatch_command(char *command);
  * \brief Print the shell prompt.
  */
 void print_prompt(void);
+
+/*!
+ * \brief Runs the shell in a loop, reading and dispatching commands until
+ * the kernel halts.
+ */
+void run_shell_loop(void);

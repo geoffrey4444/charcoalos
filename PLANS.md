@@ -20,11 +20,11 @@ This plan is based on what is already working in this repo, and on your backgrou
 
 ## Phase 1: Pre-EL0 Contract Fixes (short)
 
-1. Exception vector path must support resume:
+1. ✅ Exception vector path must support resume:
    - Replace panic-only flow in `arch/arm64/ExceptionVectors.s` so handled exceptions can restore context and `eret`.
-2. Exception handler API must express action and clear state:
+2. ✅ Exception handler API must express action and clear state:
    - Update `handle_exception` contract to return an action (for example, panic vs resume), and clear in-progress state on resumable exits.
-3. Decouple kernel control from shell:
+3. ✅ Decouple kernel control from shell:
    - Move panic/reboot control into kernel APIs (for example, `kernel/Panic`), and keep shell as a client.
    - Move the shell command table out of `Shell.h` into `Shell.c` (or a registration API) to avoid header-level coupling.
 4. ✅ Fix command tokenization bounds:
@@ -32,7 +32,7 @@ This plan is based on what is already working in this repo, and on your backgrou
    - Add unit coverage for over-limit argument counts.
 5. ✅ Remove console layering leak:
    - Remove platform-header exposure from `kernel/Console/IO.h`; keep platform dependency inside `kernel/Console/IO.c`.
-6. Split kernel lifecycle from shell loop:
+6. ✅ Split kernel lifecycle from shell loop:
    - Refactor `kmain` into explicit kernel init/run phases so scheduler/process work does not depend on an always-foreground shell loop.
 
 Exit criteria:

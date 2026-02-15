@@ -2,6 +2,7 @@
 // See LICENSE.txt for details.
 
 #include "kernel/Console/Shell.h"
+#include "kernel/Console/IO.h"
 #include "unity.h"
 
 #include <stdio.h>
@@ -41,6 +42,16 @@ const char *platform_name(void) { return "virt-test"; }
 void halt(void) { ++g_halt_calls; }
 
 void platform_reboot(void) { ++g_reboot_calls; }
+
+void kernel_panic(const char *panic_message) {
+  if (panic_message != NULL) {
+    console_print(panic_message);
+    console_print("\n\n");
+  }
+  halt();
+}
+
+void kernel_restart(void) { platform_reboot(); }
 
 static void assert_tx_equals(const char *expected) {
   const size_t expected_len = strlen(expected);
@@ -117,9 +128,9 @@ void test_help_handler_prints_all_command_names(void) {
   help_handler(0, NULL);
 
   assert_tx_contains("CharcoalOS available commands:");
-  const size_t number_of_commands = sizeof(commands) / sizeof(commands[0]);
+  const size_t number_of_commands = shell_number_of_commands();
   for (size_t i = 0; i < number_of_commands; ++i) {
-    assert_tx_contains(commands[i].name);
+    assert_tx_contains(shell_command_at(i).name);
   }
 }
 

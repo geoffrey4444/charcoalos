@@ -1,8 +1,8 @@
 // Distributed under the MIT license.
 // See LICENSE.txt for details.
 
-#include "arch/Halt.h"
 #include "platform/rpi/IO.h"
+#include "kernel/Main/Lifecycle.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -40,5 +40,5 @@ void platform_reboot(void) {
   *rstc = value;
 
   // Spin until reset
-  halt();
+  kernel_halt();
 }
