@@ -16,6 +16,10 @@ This plan is based on what is already working in this repo, and on your backgrou
 
 `hello` is no longer a kernel function. It is a user program running at EL0, launched from the kernel shell (for example: `run hello`).
 
+Longer-term goal: support true multiprocessing (SMP) plus multithreading in both kernel and user space, not only single-core multitasking.
+
+Follow-up goal: support persistent files with a minimal file system.
+
 ## Roadmap
 
 ## Phase 1: Pre-EL0 Contract Fixes (short)
@@ -92,17 +96,46 @@ Exit criteria:
 Exit criteria:
 - A handcrafted EL0 payload can print via syscall and exit back to kernel.
 
-## Phase 6: Process Model + Scheduler (Minimal)
+## Phase 6: Task/Thread Model + Scheduler (UP Baseline)
 
-1. Create `task/process` struct (register context, page table root, state, pid).
-2. Implement single-core round-robin scheduler.
-3. Add context switch path driven by timer tick.
-4. Add `wait`/reap path for exited processes.
+1. Replace process-only model with task model:
+   - `process` (address space + resources),
+   - `thread` (CPU context + kernel stack + state), with one thread as initial process main thread.
+2. Add kernel thread support (`kthread_create`, run function + arg) sharing kernel address space.
+3. Implement single-core round-robin scheduler over runnable threads.
+4. Add context switch path driven by timer tick.
+5. Add `wait`/reap for process exit and thread lifecycle bookkeeping.
 
 Exit criteria:
-- Kernel can run multiple EL0 tasks and switch between them without corruption.
+- Kernel can run and switch multiple kernel/user threads on one core without corruption.
+- Process and thread objects are distinct and ready for SMP scaling.
 
-## Phase 7: User Program Loading
+## Phase 7: Concurrency Primitives (SMP-Ready APIs)
+
+1. Add spinlock API and IRQ-safe lock variants for kernel internal use.
+2. Add blocking wait queues and wakeup primitives used by scheduler and syscalls.
+3. Introduce per-CPU data abstractions (`current_cpu`, `current_thread`, per-CPU run queue hook points), even if only CPU0 is active.
+4. Convert global mutable scheduler/task paths to use the new primitives.
+
+Exit criteria:
+- No scheduler-critical shared state is protected only by "single-core assumption".
+- Core kernel paths compile cleanly against lock/wait queue interfaces.
+
+## Phase 8: SMP Bring-Up (Kernel)
+
+1. Bring up secondary cores on `virt` first, then `rpi`:
+   - per-core boot entry, per-core stack, per-core exception vectors/state.
+2. Add inter-processor interrupt (IPI) support for scheduler reschedule/wakeup.
+3. Move from global run queue to per-CPU run queues (or global + locking as first step, then per-CPU).
+4. Enable timer tick and preemption on all active cores.
+5. Add SMP-safe shutdown/restart/panic behavior (stop other cores, ordered panic output).
+
+Exit criteria:
+- Multiple cores run kernel threads concurrently on `virt`.
+- Scheduler correctness holds under parallel execution and timer preemption.
+- `rpi` boots with secondary cores online (even if feature-limited initially).
+
+## Phase 9: User Program Loading
 
 1. Pick initial user binary format:
    - Start simple: flat binary with fixed entry + stack.
@@ -113,7 +146,7 @@ Exit criteria:
 Exit criteria:
 - Kernel can load `hello` user binary into its own address space and start it.
 
-## Phase 8: Shell-Selectable Userland Hello
+## Phase 10: Shell-Selectable Userland Hello
 
 1. Add shell command: `run <program>`.
 2. Add built-in program table (initially static, e.g. `hello`).
@@ -123,11 +156,44 @@ Exit criteria:
 Exit criteria:
 - User chooses and runs `hello` as EL0 process from shell.
 
-## Phase 9: Hardening + Learning Extensions
+## Phase 11: User-Space Multithreading
+
+1. Add thread syscalls (for example `thread_create`, `thread_exit`, `thread_join`; design names/ABI explicitly).
+2. Define user thread memory model details:
+   - user stack allocation policy,
+   - thread-local storage bootstrap strategy.
+3. Add synchronization primitives exposed to userland (start with kernel-assisted primitive such as futex-like wait/wake or a minimal mutex syscall set).
+4. Ensure scheduler can run multiple threads from the same process across different CPUs.
+5. Add sample multithreaded user program and shell command to run it.
+
+Exit criteria:
+- One user process can create and join multiple threads.
+- User threads execute in parallel on multiple CPUs under `virt`.
+
+## Phase 12: Persistence Foundation (Block I/O + VFS)
+
+1. Add a block-device abstraction in kernel (`read_blocks`, `write_blocks`, geometry/capabilities).
+2. Implement first block backends:
+   - `virt`: virtual disk path (for example QEMU-provided block device),
+   - `rpi`: SD/eMMC storage path for Pi.
+3. Add a minimal VFS layer:
+   - vnode/inode-like object model,
+   - mount table and path lookup.
+4. Implement an in-memory filesystem first (for VFS validation), then a minimal persistent on-disk filesystem.
+5. Add buffer/page cache basics and explicit sync/flush path for durability.
+6. Expose first file syscalls (`open`, `close`, `read`, `write`, `lseek`, `mkdir` minimal subset).
+7. Add shell commands for filesystem bring-up (`ls`, `cat`, `writefile`, `mount` minimal variants).
+
+Exit criteria:
+- Kernel can mount a persistent filesystem on `virt` and `rpi`.
+- Files created in one boot are readable after reboot.
+- User programs can read/write persistent files via syscalls.
+
+## Phase 13: Hardening + Learning Extensions
 
 1. Fault containment checks (user invalid memory, bad syscall args).
 2. Add `kill`, process list, and basic status reporting.
-3. Add regression tests for syscall, scheduler, and loader paths.
+3. Add regression tests for syscall, scheduler, loader, SMP, user-threading, and filesystem paths.
 4. Optional: move from static program table to initramfs-backed loading.
 
 Exit criteria:
@@ -139,9 +205,11 @@ Exit criteria:
 2. `M2`: Page allocator
 3. `M3`: MMU enabled
 4. `M4`: EL0 + `svc write/exit`
-5. `M5`: Single user task hello
-6. `M6`: `run hello` from shell
-7. `M7`: Multi-task + wait/reap
+5. `M5`: Unified task/thread model on one core
+6. `M6`: SMP kernel scheduling on `virt`
+7. `M7`: User program loading + `run hello`
+8. `M8`: User multithreading across cores
+9. `M9`: Persistent filesystem on `virt` + `rpi`
 
 ## Why This Fits Your Background
 
