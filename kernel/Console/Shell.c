@@ -39,6 +39,9 @@ size_t tokenize_command(char *command, char *tokens[], size_t max_tokens) {
       between_tokens = true;
       command[i] = '\0';
     } else if (between_tokens) {
+      if (number_of_tokens >= max_tokens) {
+        return number_of_tokens;
+      }
       tokens[number_of_tokens] = command + i;
       ++number_of_tokens;
       between_tokens = false;
@@ -188,7 +191,7 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print("\n");
 
   console_print("3.125 (hex): 0x");
-  const double x = 3.125;  
+  const double x = 3.125;
   console_print_hex((void *)&x, 8);
   console_print("\n");
 
@@ -238,3 +241,9 @@ int reboot_handler(size_t argc, const char *const *argv) {
   return 0;
 }
 
+int trapsvc_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
+  __asm__ volatile("svc #0x44");
+  return 0;
+}

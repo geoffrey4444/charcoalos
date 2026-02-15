@@ -82,6 +82,18 @@ void test_tokenize_command_splits_whitespace_and_rewrites_separators(void) {
   TEST_ASSERT_EQUAL_STRING("0x10", tokens[2]);
 }
 
+void test_tokenize_command_respects_max_tokens() {
+  char command[] = "help arg1 arg2 arg3 arg4 arg5 arg6 arg7";
+  char *tokens[4] = {0};
+
+  const size_t argc = tokenize_command(command, tokens, 4);
+  TEST_ASSERT_EQUAL_size_t(4, argc);
+  TEST_ASSERT_EQUAL_STRING("help", tokens[0]);
+  TEST_ASSERT_EQUAL_STRING("arg1", tokens[1]);
+  TEST_ASSERT_EQUAL_STRING("arg2", tokens[2]);
+  TEST_ASSERT_EQUAL_STRING("arg3", tokens[3]);
+}
+
 void test_dispatch_command_ignores_empty_input(void) {
   char command[] = "";
 
@@ -272,5 +284,6 @@ int main(void) {
   RUN_TEST(test_add_handler_with_wrong_argument_count_prints_usage_and_fails);
   RUN_TEST(test_dispatch_command_add_prints_sum);
   RUN_TEST(test_print_prompt_outputs_expected_prompt);
+  RUN_TEST(test_tokenize_command_respects_max_tokens);
   return UNITY_END();
 }

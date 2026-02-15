@@ -3,6 +3,7 @@
 
 #include "kernel/Console/IO.h"
 #include "kernel/String/String.h"
+#include "platform/IO.h"
 
 #include <stddef.h>
 

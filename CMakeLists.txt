@@ -160,11 +160,11 @@ add_custom_command(
 
 add_custom_target(minimal-virt ALL DEPENDS ${VIRT_ELF})
 
-set(VIRT_QEMU_MACHINE "virt,accel=hvf" CACHE STRING
+set(VIRT_QEMU_MACHINE "virt,accel=tcg" CACHE STRING
     "QEMU machine argument for running minimal-virt")
 set(VIRT_QEMU_SMP "4" CACHE STRING
     "QEMU SMP argument for running minimal-virt")
-set(VIRT_QEMU_CPU "host" CACHE STRING
+set(VIRT_QEMU_CPU "cortex-a72" CACHE STRING
     "QEMU cpu argument for running minimal-virt")
 set(VIRT_QEMU_MEMORY "512M" CACHE STRING
     "QEMU memory argument for running minimal-virt")
