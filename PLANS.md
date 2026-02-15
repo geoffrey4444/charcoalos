@@ -51,6 +51,17 @@ Exit criteria:
 Exit criteria:
 - Kernel prints/records ticks; IRQ path is reliable under QEMU smoke tests.
 
+## Phase 2.5: Panic UART Drain Reliability
+
+1. Add a platform console TX drain hook (for example, `platform_console_flush_tx()`).
+2. Implement drain per target (`virt` + `rpi`) using polling on UART TX-idle status bits.
+3. Call TX drain from panic/fatal paths before halt/restart.
+4. Add/update unit tests for panic lifecycle to verify flush is invoked on panic paths.
+
+Exit criteria:
+- Panic diagnostics are consistently visible on `rpi` and `virt` before halt/restart.
+- Panic path remains polling-based and does not depend on IRQ/timer availability.
+
 ## Phase 3: Memory Management Foundation
 
 1. Parse/define usable RAM region(s) per platform.
