@@ -2,24 +2,34 @@
 /* See LICENSE.txt for details. */
 
 ENTRY(_start) /* set entry point to global symbol _start */
+PHDRS {
+  text PT_LOAD FLAGS(5); /* PF_R | PF_X */
+  data PT_LOAD FLAGS(6); /* PF_R | PF_W */
+}
+
 SECTIONS {
   . = 0x40100000;
   .startup . : { boot.o(.text) } /* . : means put code (.text section */
                                  /* of assembled boot.s before anything else */
-				 /* in RAM. */
-  .text : { *(.text .text.*) }   /* all code */
-  .rodata : { *(.rodata .rodata.*) } /* string literal ("Hello...") in here */
-  .data : { *(.data) }           /* data that isn't code...might be strings? */
+                                 /* in RAM. */
+                                 :text
+  .text : { *(.text .text.*) } :text /* all code */
+  .rodata : { *(.rodata .rodata.*) } :text /* read-only data */
+  .data : { *(.data .data.*) } :data /* initialized writable data */
+
   __bss_start = .;
-  .bss : { *(.bss COMMON) }      /* common symbols at link time, e.g. */
-                                 /* global scope symbols, in COMMON */
-				 /* i.e. COMMON is tentative definitions */
-				 /* bss = zero-initialized globals/statics */
-				 /* not zeroed unless my startup code does */
-				 /* round locations to multiple of 8 bytes */
+  .bss (NOLOAD) : {
+    . = ALIGN(8);
+    *(.bss .bss.*)
+    *(COMMON)
+    . = ALIGN(8);
+  } :data /* zero-initialized globals/statics */
   __bss_end = .;
-  . = ALIGN(16);                 /* stack pointer should be 16-byte aligned */
-                                 /* at call boundaries */
-  . += 0x4000; /* Set up 16kB stack memory: move counter up 4kB */
-  __stack_top = .; /* define stack_top for boot code as 0x40101000*/
+
+  .stack (NOLOAD) : {
+    . = ALIGN(16); /* stack pointer should be 16-byte aligned */
+    __stack_bottom = .;
+    . += 0x4000; /* set up 16 KiB stack memory */
+    __stack_top = .;
+  } :data
 }
