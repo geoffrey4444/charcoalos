@@ -15,6 +15,7 @@ static size_t g_halt_calls;
 static size_t g_shell_loop_calls;
 static size_t g_platform_reboot_calls;
 static size_t g_custom_foreground_calls;
+static size_t g_initialize_timer_calls;
 
 void console_print(const char *string) {
   if (string == NULL) {
@@ -32,6 +33,8 @@ void halt(void) { ++g_halt_calls; }
 
 void run_shell_loop(void) { ++g_shell_loop_calls; }
 
+void initialize_timer(void) { ++g_initialize_timer_calls; }
+
 void platform_reboot(void) { ++g_platform_reboot_calls; }
 
 static void custom_foreground_client(void) { ++g_custom_foreground_calls; }
@@ -43,6 +46,7 @@ void setUp(void) {
   g_shell_loop_calls = 0;
   g_platform_reboot_calls = 0;
   g_custom_foreground_calls = 0;
+  g_initialize_timer_calls = 0;
   kernel_set_foreground_client(NULL);
 }
 
@@ -51,8 +55,10 @@ void tearDown(void) {}
 void test_kernel_init_prints_welcome_message(void) {
   kernel_init();
 
-  TEST_ASSERT_EQUAL_STRING_LEN("Welcome to CharcoalOS.\n", g_tx_buffer,
-                               strlen("Welcome to CharcoalOS.\n"));
+  TEST_ASSERT_EQUAL_STRING_LEN(
+      "Initializing timer... done.\n\nWelcome to CharcoalOS.\n", g_tx_buffer,
+      strlen("Initializing timer... done.\n\nWelcome to CharcoalOS.\n"));
+  TEST_ASSERT_EQUAL_size_t(1, g_initialize_timer_calls);
 }
 
 void test_kernel_run_calls_default_shell_client_after_init(void) {

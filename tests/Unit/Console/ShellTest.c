@@ -21,6 +21,9 @@ static size_t g_rx_size;
 static size_t g_rx_index;
 static bool g_break_shell_loop_on_rx_exhausted;
 static bool g_shell_loop_escape_enabled;
+static uint64_t g_fake_timer_frequency_hz;
+static uint64_t g_fake_interrupt_frequency_hz;
+static uint64_t g_fake_uptime_ms;
 // Stores the saved execution point for setjmp/longjmp test escape.
 static jmp_buf g_shell_loop_escape_jmp;
 
@@ -57,6 +60,14 @@ uintptr_t stack_pointer_address(void) { return (uintptr_t)0xCAFEBABEu; }
 const char *arch_name(void) { return "arm64-test"; }
 
 const char *platform_name(void) { return "virt-test"; }
+
+uint64_t read_timer_frequency_in_hz(void) { return g_fake_timer_frequency_hz; }
+
+uint64_t interrupt_frequency_in_hz(void) {
+  return g_fake_interrupt_frequency_hz;
+}
+
+uint64_t uptime(void) { return g_fake_uptime_ms; }
 
 void halt(void) { ++g_halt_calls; }
 
@@ -99,6 +110,9 @@ void setUp(void) {
   g_rx_index = 0;
   g_break_shell_loop_on_rx_exhausted = false;
   g_shell_loop_escape_enabled = false;
+  g_fake_timer_frequency_hz = 0x00BC614E;
+  g_fake_interrupt_frequency_hz = 0x64;
+  g_fake_uptime_ms = 0;
 }
 
 void tearDown(void) {}
@@ -174,6 +188,7 @@ void test_shell_command_at_exposes_expected_commands_without_order_assumptions(
   bool found_panic = false;
   bool found_reboot = false;
   bool found_trapsvc = false;
+  bool found_uptime = false;
 
   const size_t number_of_commands = shell_number_of_commands();
   TEST_ASSERT_TRUE(number_of_commands > 0);
@@ -198,6 +213,8 @@ void test_shell_command_at_exposes_expected_commands_without_order_assumptions(
       found_reboot = true;
     } else if (strcmp(command.name, "trapsvc") == 0) {
       found_trapsvc = true;
+    } else if (strcmp(command.name, "uptime") == 0) {
+      found_uptime = true;
     }
   }
 
@@ -208,6 +225,7 @@ void test_shell_command_at_exposes_expected_commands_without_order_assumptions(
   TEST_ASSERT_TRUE(found_panic);
   TEST_ASSERT_TRUE(found_reboot);
   TEST_ASSERT_TRUE(found_trapsvc);
+  TEST_ASSERT_TRUE(found_uptime);
 }
 
 void test_dispatch_command_help_prints_expected_command_list(void) {
@@ -235,6 +253,8 @@ void test_info_handler_prints_expected_info_fields(void) {
   assert_tx_contains("SCTLR_EL1: 0x");
   assert_tx_contains("Architecture: arm64-test");
   assert_tx_contains("Platform: virt-test");
+  assert_tx_contains("System clock frequency (Hz): 0x0000000000BC614E");
+  assert_tx_contains("Interrupt timer ticks per second: 0x0000000000000064");
 }
 
 void test_panic_handler_prints_message_and_calls_halt(void) {
@@ -344,6 +364,24 @@ void test_dispatch_command_add_prints_sum(void) {
   assert_tx_equals("0000000000000030\r\n");
 }
 
+void test_uptime_handler_prints_fixed_width_hex_milliseconds(void) {
+  g_fake_uptime_ms = 0x123;
+
+  const int result = uptime_handler(0, NULL);
+
+  TEST_ASSERT_EQUAL_INT(0, result);
+  assert_tx_equals("0x0000000000000123\r\n");
+}
+
+void test_dispatch_command_uptime_prints_uptime(void) {
+  g_fake_uptime_ms = 0xABCDEF;
+  char command[] = "uptime";
+
+  dispatch_command(command);
+
+  assert_tx_equals("0x0000000000ABCDEF\r\n");
+}
+
 void test_print_prompt_outputs_expected_prompt(void) {
   print_prompt();
 
@@ -393,6 +431,8 @@ int main(void) {
   RUN_TEST(test_add_handler_prints_hex_sum_for_two_arguments);
   RUN_TEST(test_add_handler_with_wrong_argument_count_prints_usage_and_fails);
   RUN_TEST(test_dispatch_command_add_prints_sum);
+  RUN_TEST(test_uptime_handler_prints_fixed_width_hex_milliseconds);
+  RUN_TEST(test_dispatch_command_uptime_prints_uptime);
   RUN_TEST(test_print_prompt_outputs_expected_prompt);
   RUN_TEST(test_run_shell_loop_prints_prompt_dispatches_input_and_prompts_again);
   RUN_TEST(test_tokenize_command_respects_max_tokens);

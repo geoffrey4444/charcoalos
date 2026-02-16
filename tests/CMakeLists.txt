@@ -68,6 +68,18 @@ if(QEMU_SYSTEM_AARCH64)
   set_tests_properties(smoke-refactored-virt-console PROPERTIES DEPENDS refactored-virt)
 
   add_test(
+    NAME smoke-refactored-virt-uptime-increases
+    COMMAND ${CMAKE_COMMAND}
+            -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
+            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DQEMU_MACHINE=virt
+            -DQEMU_CPU=max
+            -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
+            -DSMOKE_TIMEOUT_SEC=5
+            -P ${CMAKE_SOURCE_DIR}/tests/Helpers/check_virt_uptime_smoke.cmake)
+  set_tests_properties(smoke-refactored-virt-uptime-increases PROPERTIES DEPENDS refactored-virt)
+
+  add_test(
     NAME smoke-refactored-virt-exception-memread
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}

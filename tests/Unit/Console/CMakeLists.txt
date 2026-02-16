@@ -36,6 +36,8 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/kernel/Console/Shell.h
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
       ${CMAKE_SOURCE_DIR}/kernel/String/String.h
+      ${CMAKE_SOURCE_DIR}/kernel/Time/Uptime.h
+      ${CMAKE_SOURCE_DIR}/arch/Interrupt.h
       ${CMAKE_SOURCE_DIR}/platform/IO.h
       ${CMAKE_SOURCE_DIR}/platform/Reboot.h)
 
@@ -57,6 +59,7 @@ if(COMMAND add_host_unity_test)
     DEPENDS
       ${CMAKE_SOURCE_DIR}/arch/ExceptionHandler.h
       ${CMAKE_SOURCE_DIR}/arch/Halt.h
+      ${CMAKE_SOURCE_DIR}/arch/Interrupt.h
       ${CMAKE_SOURCE_DIR}/arch/arm64/ExceptionTypes.h
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
       ${CMAKE_SOURCE_DIR}/kernel/String/String.h
@@ -93,10 +96,20 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/kernel/Panic/Restart.c
     DEPENDS
       ${CMAKE_SOURCE_DIR}/arch/Halt.h
+      ${CMAKE_SOURCE_DIR}/arch/Interrupt.h
       ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
       ${CMAKE_SOURCE_DIR}/kernel/Console/Shell.h
       ${CMAKE_SOURCE_DIR}/kernel/Main/Lifecycle.h
       ${CMAKE_SOURCE_DIR}/kernel/Panic/Panic.h
       ${CMAKE_SOURCE_DIR}/kernel/Panic/Restart.h
       ${CMAKE_SOURCE_DIR}/platform/Reboot.h)
+
+  add_host_unity_test(
+    NAME unit-uptime
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/UptimeTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Time/Uptime.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Time/Uptime.h
+      ${CMAKE_SOURCE_DIR}/arch/Interrupt.h)
 endif()

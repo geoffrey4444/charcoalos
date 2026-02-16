@@ -47,18 +47,16 @@ execute_process(
 set(qemu_text "${qemu_out}\n${qemu_err}")
 string(REPLACE "\r\n" "\n" qemu_text "${qemu_text}")
 string(REPLACE "\r" "\n" qemu_text "${qemu_text}")
-string(REGEX MATCH "[^\n]+" first_line "${qemu_text}")
 
-if(first_line STREQUAL "")
+if(qemu_text STREQUAL "")
   message(FATAL_ERROR
           "QEMU smoke test produced no output.\nstdout/stderr:\n${qemu_text}")
 endif()
 
-string(FIND "${first_line}" "${EXPECTED_SUBSTRING}" expected_pos)
+string(FIND "${qemu_text}" "${EXPECTED_SUBSTRING}" expected_pos)
 if(expected_pos EQUAL -1)
   message(FATAL_ERROR
-          "First output line did not contain expected text.\n"
+          "QEMU output did not contain expected text.\n"
           "Expected substring: '${EXPECTED_SUBSTRING}'\n"
-          "First line: '${first_line}'\n"
           "Full output:\n${qemu_text}")
 endif()

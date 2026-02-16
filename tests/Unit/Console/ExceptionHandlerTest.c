@@ -12,6 +12,7 @@
 static char g_tx_buffer[8192];
 static size_t g_tx_index;
 static size_t g_halt_calls;
+static size_t g_interrupt_handler_calls;
 
 void platform_console_putc(char c) {
   if (g_tx_index < sizeof(g_tx_buffer)) {
@@ -23,6 +24,8 @@ char platform_console_getc(void) { return '\0'; }
 
 void halt(void) { ++g_halt_calls; }
 
+void handle_interrupt_exception(void) { ++g_interrupt_handler_calls; }
+
 static void assert_tx_contains(const char *needle) {
   TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, needle));
 }
@@ -31,6 +34,7 @@ void setUp(void) {
   memset(g_tx_buffer, 0, sizeof(g_tx_buffer));
   g_tx_index = 0;
   g_halt_calls = 0;
+  g_interrupt_handler_calls = 0;
 }
 
 void tearDown(void) {}
@@ -54,8 +58,20 @@ void test_handle_exception_prints_diagnostics_and_panics(void) {
   assert_tx_contains("Kernel panic: your computer must be restarted.");
 }
 
+void test_handle_exception_irq_calls_interrupt_handler_and_resumes(void) {
+  uint64_t saved_registers[32] = {0};
+
+  uint64_t action = handle_exception(saved_registers, EXCEPTION_TYPE_IRQ_EL1_SPX);
+
+  TEST_ASSERT_EQUAL_size_t(EXCEPTION_ACTION_RESUME, action);
+  TEST_ASSERT_EQUAL_size_t(1, g_interrupt_handler_calls);
+  TEST_ASSERT_EQUAL_size_t(0, g_halt_calls);
+  TEST_ASSERT_EQUAL_size_t(0, g_tx_index);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_handle_exception_prints_diagnostics_and_panics);
+  RUN_TEST(test_handle_exception_irq_calls_interrupt_handler_and_resumes);
   return UNITY_END();
 }
