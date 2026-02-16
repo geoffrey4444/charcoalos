@@ -171,8 +171,7 @@ EXCEPTION_ENTRY serr_el0_a32
     // Should not return from reboot, but if it does, just continue to panic
   2:
     // Panic: infinite loop
-    wfe
-    b 2b
+    bl halt
 .endm
 
 // Now define all the handlers (labels that get jumped to from the
@@ -214,5 +213,5 @@ serr_el0_a32:
   EXCEPTION_HANDLER 15
 // Should not get here, but if you do, just infinite loop
 4:
-  wfe
-  b 4b
+  bl halt
+

@@ -65,6 +65,5 @@ _start:
 	                     //   the symbol kmain that assembly calls
 	// b .                  // Branch to self, no return address (inf loop)
 	// Nope! Politely park the core to minimize power draw
-halt:
-	wfe
-	b halt
+7:
+	bl halt
