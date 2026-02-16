@@ -56,7 +56,7 @@ static const char *exception_type_string(uint64_t kind_of_exception) {
 // SPSR_EL1: saved program status register ... bits have info about exception
 // FAR_EL1: Fault address register
 //
-static inline uint64_t read_esr_el1(void) {
+__attribute__((weak)) uint64_t arch_exception_read_esr_el1(void) {
 #if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, ESR_EL1" : "=r"(register_value));
@@ -66,7 +66,7 @@ static inline uint64_t read_esr_el1(void) {
 #endif
 }
 
-static inline uint64_t read_elr_el1(void) {
+__attribute__((weak)) uint64_t arch_exception_read_elr_el1(void) {
 #if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, ELR_EL1" : "=r"(register_value));
@@ -76,7 +76,7 @@ static inline uint64_t read_elr_el1(void) {
 #endif
 }
 
-static inline uint64_t read_spsr_el1(void) {
+__attribute__((weak)) uint64_t arch_exception_read_spsr_el1(void) {
 #if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, SPSR_EL1" : "=r"(register_value));
@@ -86,7 +86,7 @@ static inline uint64_t read_spsr_el1(void) {
 #endif
 }
 
-static inline uint64_t read_far_el1(void) {
+__attribute__((weak)) uint64_t arch_exception_read_far_el1(void) {
 #if defined(__aarch64__) && !__STDC_HOSTED__
   uint64_t register_value;
   __asm__ volatile("mrs %0, FAR_EL1" : "=r"(register_value));
@@ -216,6 +216,12 @@ static const char *exception_class_to_string(uint64_t exception_class) {
 // Flag to stop a cascade of recursive exceptions
 static volatile uint64_t g_exception_in_progress = 0;
 
+#if __STDC_HOSTED__
+void arch_exception_set_in_progress_for_test(uint64_t value) {
+  g_exception_in_progress = value;
+}
+#endif
+
 static inline bool is_sync_exception_type(uint64_t kind_of_exception) {
   return (kind_of_exception == EXCEPTION_TYPE_SYNC_EL1_SP0) ||
          (kind_of_exception == EXCEPTION_TYPE_SYNC_EL1_SPX) ||
@@ -227,10 +233,10 @@ uint64_t handle_exception(uint64_t *saved_registers,
                           uint64_t kind_of_exception) {
   // First, save the state. Registers already saved; save system registers
   // and basic info about the exception here.
-  const uint64_t esr_el1_value = read_esr_el1();
-  const uint64_t elr_el1_value = read_elr_el1();
-  const uint64_t spsr_value = read_spsr_el1();
-  const uint64_t far_value = read_far_el1();
+  const uint64_t esr_el1_value = arch_exception_read_esr_el1();
+  const uint64_t elr_el1_value = arch_exception_read_elr_el1();
+  const uint64_t spsr_value = arch_exception_read_spsr_el1();
+  const uint64_t far_value = arch_exception_read_far_el1();
   const uint64_t exception_class = exception_class_from_esr_el1(esr_el1_value);
   const uint64_t iss = iss_from_esr_el1(esr_el1_value);
 
