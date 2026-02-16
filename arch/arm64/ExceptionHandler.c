@@ -108,6 +108,12 @@ static inline uint64_t iss_from_esr_el1(uint64_t esr_el1_value) {
   return esr_el1_value & 0x01FFFFFFULL;  // 0x01FFFFFFULL = 25 1's, masks [24:0]
 }
 
+static inline void mask_all_exceptions_for_fatal_path(void) {
+#if defined(__aarch64__) && !__STDC_HOSTED__
+  __asm__ volatile("msr daifset, #0xf" ::: "memory");
+#endif
+}
+
 static const char *exception_class_to_string(uint64_t exception_class) {
   switch (exception_class) {
     case EXCEPTION_CLASS_UNKNOWN:
@@ -210,6 +216,13 @@ static const char *exception_class_to_string(uint64_t exception_class) {
 // Flag to stop a cascade of recursive exceptions
 static volatile uint64_t g_exception_in_progress = 0;
 
+static inline bool is_sync_exception_type(uint64_t kind_of_exception) {
+  return (kind_of_exception == EXCEPTION_TYPE_SYNC_EL1_SP0) ||
+         (kind_of_exception == EXCEPTION_TYPE_SYNC_EL1_SPX) ||
+         (kind_of_exception == EXCEPTION_TYPE_SYNC_EL0_64) ||
+         (kind_of_exception == EXCEPTION_TYPE_SYNC_EL0_32);
+}
+
 uint64_t handle_exception(uint64_t *saved_registers,
                           uint64_t kind_of_exception) {
   // First, save the state. Registers already saved; save system registers
@@ -224,7 +237,12 @@ uint64_t handle_exception(uint64_t *saved_registers,
   // Check if exception can be handled. Handled exceptions:
   //   - system calls via svc trap
   //   - IRQs from the timer (type IRQ_EL1_SPX, since EL1 uses SP_EL1)
-  if (exception_class == EXCEPTION_CLASS_SVC_AARCH64) {
+  if (kind_of_exception == EXCEPTION_TYPE_IRQ_EL1_SPX) {
+    if (handle_interrupt_exception()) {
+      return EXCEPTION_ACTION_RESUME;
+    }
+  } else if (is_sync_exception_type(kind_of_exception) &&
+             (exception_class == EXCEPTION_CLASS_SVC_AARCH64)) {
     // By convention, x8 has the system call number
     const uint64_t system_call_number_requested = saved_registers[8];
 
@@ -240,25 +258,20 @@ uint64_t handle_exception(uint64_t *saved_registers,
       g_exception_in_progress = 0;
       return EXCEPTION_ACTION_RESUME;
     }
-  } else if (kind_of_exception == EXCEPTION_TYPE_IRQ_EL1_SPX) {
-    if (handle_interrupt_exception()) {
-      return EXCEPTION_ACTION_RESUME;
-    }
   }
 
   // The exception cannot be handled. So now print diagnostics and panic.
   // But first, check if already in an exception.
   // If this is an exception that triggered after another exception, just halt
-  // Uses a compiler built-in to check if there's already an exception in
-  // progress. atomic relaxed means no cross-thread ordering guarantees
-  // beyond this single variable.
-  if (__atomic_test_and_set((volatile void *)&g_exception_in_progress,
-                            __ATOMIC_RELAXED)) {
+  // Keep this simple for current single-core bring-up paths.
+  if (g_exception_in_progress != 0) {
     // Nested exception: do not print, just stop immediately.
     halt();
   }
 
   g_exception_in_progress = 1;
+  // Keep the fatal path stable while printing diagnostics.
+  mask_all_exceptions_for_fatal_path();
 
   // Later on, some errors could be handled and recovered from, but for now,
   // just print error information and panic, regardless of the type
