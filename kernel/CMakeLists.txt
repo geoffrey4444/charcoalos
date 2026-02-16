@@ -16,7 +16,8 @@ function(add_kernel_common_target target_name)
     ${kernel_dir}/Main/Main.c
     ${kernel_dir}/Panic/Panic.c
     ${kernel_dir}/Panic/Restart.c
-    ${kernel_dir}/String/String.c)
+    ${kernel_dir}/String/String.c
+    ${kernel_dir}/Time/Uptime.c)
 
   add_library(${target_name} OBJECT ${kernel_common_sources})
   target_compile_options(${target_name} PRIVATE

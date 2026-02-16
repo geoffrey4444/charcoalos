@@ -2,15 +2,14 @@
 // See LICENSE.txt for details.
 
 #include "arch/Halt.h"
+#include "arch/Interrupt.h"
 #include "kernel/Console/IO.h"
 #include "kernel/Console/Shell.h"
 #include "kernel/Main/Lifecycle.h"
 
 #include <stddef.h>
 
-static void run_default_foreground_client(void) {
-  run_shell_loop();
-}
+static void run_default_foreground_client(void) { run_shell_loop(); }
 
 static kernel_foreground_client_t g_foreground_client = NULL;
 
@@ -19,7 +18,12 @@ void kernel_set_foreground_client(kernel_foreground_client_t client) {
 }
 
 void kernel_init(void) {
+  console_print("Initializing timer... ");
+  initialize_timer();
+  console_print("done.\n\n");
+
   console_print("Welcome to CharcoalOS.\n");
+
   if (g_foreground_client == NULL) {
     kernel_set_foreground_client(run_default_foreground_client);
   }
@@ -33,6 +37,4 @@ void kernel_run(void) {
   g_foreground_client();
 }
 
-void kernel_halt() {
-  halt();
-}
+void kernel_halt() { halt(); }

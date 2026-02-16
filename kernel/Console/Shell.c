@@ -2,11 +2,13 @@
 // See LICENSE.txt for details.
 
 #include "arch/Info.h"
+#include "arch/Interrupt.h"
 #include "kernel/Console/IO.h"
 #include "kernel/Console/Shell.h"
 #include "kernel/Panic/Panic.h"
 #include "kernel/Panic/Restart.h"
 #include "kernel/String/String.h"
+#include "kernel/Time/Uptime.h"
 #include "platform/IO.h"
 #include "platform/Info.h"
 
@@ -21,7 +23,8 @@ static const struct shell_command commands[] = {
     {"memread", "Read memory at address", memread_handler},
     {"panic", "Panic the kernel", panic_handler},
     {"reboot", "Reboot the system", reboot_handler},
-    {"trapsvc", "Trigger a svc exception", trapsvc_handler}};
+    {"trapsvc", "Trigger a svc exception", trapsvc_handler},
+    {"uptime", "Display milliseconds since last restart", uptime_handler}};
 
 size_t shell_number_of_commands(void) {
   return sizeof(commands) / sizeof(commands[0]);
@@ -210,6 +213,16 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print(platform_name());
   console_print("\n");
 
+  console_print("System clock frequency (Hz): 0x");
+  const uint64_t system_clock_freq = read_timer_frequency_in_hz();
+  console_print_hex((void *)&system_clock_freq, 8);
+  console_print("\n");
+
+  console_print("Interrupt timer ticks per second: 0x");
+  const uint64_t interrupt_freq = interrupt_frequency_in_hz();
+  console_print_hex((void *)&interrupt_freq, 8);
+  console_print("\n");
+
   console_print("3.125 (hex): 0x");
   const double x = 3.125;
   console_print_hex((void *)&x, 8);
@@ -270,6 +283,16 @@ int trapsvc_handler(size_t argc, const char *const *argv) {
     __asm__ volatile("svc #0");
   }
 
+  return 0;
+}
+
+int uptime_handler(size_t argc, const char *const *argv) {
+  (void)argc;
+  (void)argv;
+  const uint64_t uptime_seconds = uptime();
+  console_print("0x");
+  console_print_hex((void *)&uptime_seconds, 8);
+  console_print("\n");
   return 0;
 }
 

@@ -13,7 +13,8 @@ function(add_arch_arm64_target target_name)
     ${arch_arm64_dir}/ExceptionHandler.c
     ${arch_arm64_dir}/ExceptionVectors.s
     ${arch_arm64_dir}/Halt.c
-    ${arch_arm64_dir}/Info.c)
+    ${arch_arm64_dir}/Info.c
+    ${arch_arm64_dir}/Interrupt.c)
 
   add_library(${target_name} OBJECT ${arch_arm64_sources})
   target_compile_options(${target_name} PRIVATE

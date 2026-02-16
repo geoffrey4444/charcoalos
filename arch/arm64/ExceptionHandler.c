@@ -2,6 +2,7 @@
 // See LICENSE.txt for details.
 
 #include "arch/Halt.h"
+#include "arch/Interrupt.h"
 #include "arch/arm64/ExceptionTypes.h"
 #include "kernel/Console/IO.h"
 
@@ -220,8 +221,9 @@ uint64_t handle_exception(uint64_t *saved_registers,
   const uint64_t exception_class = exception_class_from_esr_el1(esr_el1_value);
   const uint64_t iss = iss_from_esr_el1(esr_el1_value);
 
-  // Check if exception can be handled
-  // For now, only handle one exception: svc on aarch64
+  // Check if exception can be handled. Handled exceptions:
+  //   - system calls via svc trap
+  //   - IRQs from the timer (type IRQ_EL1_SPX, since EL1 uses SP_EL1)
   if (exception_class == EXCEPTION_CLASS_SVC_AARCH64) {
     // By convention, x8 has the system call number
     const uint64_t system_call_number_requested = saved_registers[8];
@@ -238,6 +240,9 @@ uint64_t handle_exception(uint64_t *saved_registers,
       g_exception_in_progress = 0;
       return EXCEPTION_ACTION_RESUME;
     }
+  } else if (kind_of_exception == EXCEPTION_TYPE_IRQ_EL1_SPX) {
+    handle_interrupt_exception();
+    return EXCEPTION_ACTION_RESUME;
   }
 
   // The exception cannot be handled. So now print diagnostics and panic.

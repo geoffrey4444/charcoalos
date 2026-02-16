@@ -37,17 +37,68 @@ size_t shell_number_of_commands(void);
 struct shell_command shell_command_at(size_t index);
 
 /*!
+ * \brief Function that handles the add shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
+int add_handler(size_t argc, const char *const *argv);
+
+/*!
  * \brief Function that handles the help shell command
  * \param argc Number of arguments (including the command name)
  * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
  */
-int add_handler(size_t argc, const char *const *argv);
 int help_handler(size_t argc, const char *const *argv);
+
+/*!
+ * \brief Function that handles the info shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
 int info_handler(size_t argc, const char *const *argv);
+
+/*!
+ * \brief Function that handles the memread shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
 int memread_handler(size_t argc, const char *const *argv);
+
+/*!
+ * \brief Function that handles the panic shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
 int panic_handler(size_t argc, const char *const *argv);
+
+/*!
+ * \brief Function that handles the reboot shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
 int reboot_handler(size_t argc, const char *const *argv);
+
+/*!
+ * \brief Function that handles the trapsvc shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
 int trapsvc_handler(size_t argc, const char *const *argv);
+
+/*!
+ * \brief Function that handles the uptime shell command
+ * \param argc Number of arguments (including the command name)
+ * \param argv The command arguments (including the command name)
+ * \returns 0 on success, nonzero on failure
+ */
+int uptime_handler(size_t argc, const char *const *argv);
 
 /*!
  * \brief Function to tokenize a command entered on the command line
