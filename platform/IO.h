@@ -23,3 +23,9 @@ char platform_console_getc(void);
  * \brief Returns the name of the platform
  */
 const char* platform_name(void);
+
+/*!
+ * \brief Flushes the console output (UART TX), waiting to return until the
+ * TX FIFO is empty.
+ */
+void platform_console_tx_flush(void);

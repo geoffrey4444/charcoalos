@@ -26,6 +26,13 @@ void platform_console_putc(char c) { uart_putc(c); }
 
 char platform_console_getc(void) { return uart_getc(); }
 
-const char* platform_name(void) {
-  return "Raspberry Pi";
+const char* platform_name(void) { return "Raspberry Pi"; }
+
+void platform_console_tx_flush(void) {
+  // Wait until TX is empty (UART_FR_TXFE bit == 1 when empty)
+  while ((UART0_FR & UART_FR_TXFE) == 0) {
+  }
+  // Wait until UART is not busy (UART_FR_BUSY bit == 1 when busy)
+  while ((UART0_FR & UART_FR_BUSY) != 0) {
+  }
 }

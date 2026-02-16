@@ -14,3 +14,5 @@
 #define UART0_FR (*(volatile uint32_t *)(UART0_BASE + 0x18))
 #define UART_FR_TXFF (1u << 5)  // TX FIFO full
 #define UART_FR_RXFE (1u << 4)  // RX FIFO empty
+#define UART_FR_BUSY (1u << 3)  // UART busy
+#define UART_FR_TXFE (1u << 7)  // TX FIFO empty

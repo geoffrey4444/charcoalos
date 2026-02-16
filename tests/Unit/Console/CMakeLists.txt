@@ -77,6 +77,15 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/platform/virt/IO.h)
 
   add_host_unity_test(
+    NAME unit-platform-console-tx-flush
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/PlatformConsoleTxFlushTest.c
+      ${CMAKE_SOURCE_DIR}/platform/virt/IO.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/platform/IO.h
+      ${CMAKE_SOURCE_DIR}/platform/virt/IO.h)
+
+  add_host_unity_test(
     NAME unit-platform-rpi-info
     SOURCES
       ${CMAKE_SOURCE_DIR}/tests/Unit/Console/PlatformRpiInfoTest.c
