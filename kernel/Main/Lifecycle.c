@@ -18,6 +18,7 @@ void kernel_set_foreground_client(kernel_foreground_client_t client) {
 }
 
 void kernel_init(void) {
+  print_timer_diagnostics();
   console_print("Initializing timer... ");
   initialize_timer();
   console_print("done.\n\n");

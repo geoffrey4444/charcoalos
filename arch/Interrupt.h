@@ -33,3 +33,8 @@ void initialize_timer(void);
  * uptime timer.
  */
 void handle_interrupt_exception(void);
+
+/*!
+ * \brief Prints timer diagnostics to the console for debugging.
+ */
+void print_timer_diagnostics(void);
