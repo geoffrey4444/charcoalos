@@ -22,7 +22,7 @@ Follow-up goal: support persistent files with a minimal file system.
 
 ## Roadmap
 
-## Phase 1: Pre-EL0 Contract Fixes (short)
+## ✅ Phase 1: Pre-EL0 Contract Fixes (short)
 
 1. ✅ Exception vector path must support resume:
    - Replace panic-only flow in `arch/arm64/ExceptionVectors.s` so handled exceptions can restore context and `eret`.
@@ -40,16 +40,16 @@ Follow-up goal: support persistent files with a minimal file system.
    - Refactor `kmain` into explicit kernel init/run phases so scheduler/process work does not depend on an always-foreground shell loop.
 
 Exit criteria:
-- IRQ and `svc` paths can return safely from exception entry.
-- Shell no longer defines kernel-control APIs or command table at header scope.
-- Command parsing is bounds-safe under unit test.
-- Console interface no longer exposes platform headers.
-- Kernel lifecycle allows shell as one client, not the kernel control loop.
+- ✅ IRQ and `svc` paths can return safely from exception entry.
+- ✅ Shell no longer defines kernel-control APIs or command table at header scope.
+- ✅ Command parsing is bounds-safe under unit test.
+- ✅ Console interface no longer exposes platform headers.
+- ✅ Kernel lifecycle allows shell as one client, not the kernel control loop.
 
-## Phase 2: Interrupts + Timer Tick
+## ✅ Phase 2: Interrupts + Timer Tick
 
 Goal:
-- Deliver a reliable periodic timer IRQ on CPU0, first on `virt`, then on `rpi`, with kernel-visible ticks and a shell command to inspect uptime ticks.
+- ✅ Deliver a reliable periodic timer IRQ on CPU0, first on `virt`, then on `rpi`, with kernel-visible ticks and a shell command to inspect uptime ticks.
 
 2.1. Device tree discovery + interrupt map notes
 1. ✅ Dump/decompile device tree for each target:
@@ -110,16 +110,17 @@ Exit criteria:
 - ✅ IRQ unknown-source behavior is diagnosable and does not silently continue.
 - ✅ QEMU smoke test proves periodic interrupts are actually firing and kernel resumes from IRQ repeatedly.
 
-## Phase 2.5: Panic UART Drain Reliability
+## ✅ Phase 2.5: Panic UART Drain Reliability
 
-1. Add a platform console TX drain hook (for example, `platform_console_flush_tx()`).
-2. Implement drain per target (`virt` + `rpi`) using polling on UART TX-idle status bits.
-3. Call TX drain from panic/fatal paths before halt/restart.
-4. Add/update unit tests for panic lifecycle to verify flush is invoked on panic paths.
+1. ✅ Add a platform console TX drain hook (for example, `platform_console_flush_tx()`).
+2. ✅ Implement drain per target (`virt` + `rpi`) using polling on UART TX-idle status bits.
+3. ✅ Call TX drain from panic/fatal paths before halt/restart.
+4. ✅ Add/update unit tests for panic lifecycle to verify flush is invoked on panic paths.
+5. ✅ Remove __atomic_test_and_set() in exception handler, so diagnostic text prints on rpi on unhandled exception
 
 Exit criteria:
-- Panic diagnostics are consistently visible on `rpi` and `virt` before halt/restart.
-- Panic path remains polling-based and does not depend on IRQ/timer availability.
+- ✅ Panic diagnostics are consistently visible on `rpi` and `virt` before halt/restart.
+- ✅ Panic path remains polling-based and does not depend on IRQ/timer availability.
 
 ## Phase 3: Memory Management Foundation
 
