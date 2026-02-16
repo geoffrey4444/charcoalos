@@ -68,6 +68,39 @@ add_subdirectory(arch/arm64)
 add_subdirectory(platform/virt)
 add_subdirectory(platform/rpi)
 
+function(configure_platform_interrupt_map platform_name out_include_dir)
+  set(platform_include_dir
+      "${CMAKE_BINARY_DIR}/generated/${platform_name}/include")
+  set(platform_include_parent
+      "${platform_include_dir}/platform")
+  file(MAKE_DIRECTORY "${platform_include_parent}")
+  configure_file(
+    "${CMAKE_SOURCE_DIR}/platform/${platform_name}/InterruptMap.h"
+    "${platform_include_parent}/InterruptMap.h"
+    COPYONLY)
+  set(${out_include_dir} "${platform_include_dir}" PARENT_SCOPE)
+endfunction()
+
+configure_platform_interrupt_map(virt VIRT_PLATFORM_INCLUDE_DIR)
+configure_platform_interrupt_map(rpi RPI_PLATFORM_INCLUDE_DIR)
+
+add_kernel_common_target(kernel_common_virt
+  PLATFORM_INCLUDE_DIR "${VIRT_PLATFORM_INCLUDE_DIR}"
+  PLATFORM_DEFINE TARGET_VIRT=1)
+add_kernel_common_target(kernel_common_rpi
+  PLATFORM_INCLUDE_DIR "${RPI_PLATFORM_INCLUDE_DIR}"
+  PLATFORM_DEFINE TARGET_RPI=1)
+add_arch_arm64_target(arch_arm64_virt
+  PLATFORM_INCLUDE_DIR "${VIRT_PLATFORM_INCLUDE_DIR}"
+  PLATFORM_DEFINE TARGET_VIRT=1)
+add_arch_arm64_target(arch_arm64_rpi
+  PLATFORM_INCLUDE_DIR "${RPI_PLATFORM_INCLUDE_DIR}"
+  PLATFORM_DEFINE TARGET_RPI=1)
+add_platform_virt_target(platform_virt
+  PLATFORM_INCLUDE_DIR "${VIRT_PLATFORM_INCLUDE_DIR}")
+add_platform_rpi_target(platform_rpi
+  PLATFORM_INCLUDE_DIR "${RPI_PLATFORM_INCLUDE_DIR}")
+
 set(REF_VIRT_BUILD_DIR ${CMAKE_BINARY_DIR}/virt)
 set(REF_VIRT_BOOT_O ${REF_VIRT_BUILD_DIR}/boot.o)
 set(REF_VIRT_ELF ${REF_VIRT_BUILD_DIR}/kernel.elf)
@@ -84,17 +117,17 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E chdir ${REF_VIRT_BUILD_DIR}
           ${AARCH64_LD} -nostdlib -T ${CMAKE_SOURCE_DIR}/platform/virt/linker.ld
           boot.o
-          $<TARGET_OBJECTS:kernel_common>
-          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:kernel_common_virt>
+          $<TARGET_OBJECTS:arch_arm64_virt>
           $<TARGET_OBJECTS:platform_virt>
           -o kernel.elf
   DEPENDS ${REF_VIRT_BOOT_O}
           ${CMAKE_SOURCE_DIR}/platform/virt/linker.ld
-          kernel_common
-          arch_arm64
+          kernel_common_virt
+          arch_arm64_virt
           platform_virt
-          $<TARGET_OBJECTS:kernel_common>
-          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:kernel_common_virt>
+          $<TARGET_OBJECTS:arch_arm64_virt>
           $<TARGET_OBJECTS:platform_virt>
   COMMAND_EXPAND_LISTS
   VERBATIM)
@@ -117,17 +150,17 @@ add_custom_command(
   OUTPUT ${REF_RPI_ELF}
   COMMAND ${AARCH64_LD} -nostdlib -T ${CMAKE_SOURCE_DIR}/platform/rpi/linker.ld
           ${REF_RPI_BOOT_O}
-          $<TARGET_OBJECTS:kernel_common>
-          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:kernel_common_rpi>
+          $<TARGET_OBJECTS:arch_arm64_rpi>
           $<TARGET_OBJECTS:platform_rpi>
           -o ${REF_RPI_ELF}
   DEPENDS ${REF_RPI_BOOT_O}
           ${CMAKE_SOURCE_DIR}/platform/rpi/linker.ld
-          kernel_common
-          arch_arm64
+          kernel_common_rpi
+          arch_arm64_rpi
           platform_rpi
-          $<TARGET_OBJECTS:kernel_common>
-          $<TARGET_OBJECTS:arch_arm64>
+          $<TARGET_OBJECTS:kernel_common_rpi>
+          $<TARGET_OBJECTS:arch_arm64_rpi>
           $<TARGET_OBJECTS:platform_rpi>
   COMMAND_EXPAND_LISTS
   VERBATIM)
