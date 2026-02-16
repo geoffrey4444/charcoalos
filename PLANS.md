@@ -61,54 +61,54 @@ Goal:
    - chosen timer source (`CNTP_*` or `CNTV_*`) and why. — CNTP, physical timer is simplest for a bare-metal EL1 kernel
 3. ✅ Keep these notes target-specific so later SMP work can extend them without rediscovery.
 
-2.2. Common AArch64 IRQ/timer scaffolding
+2.2. ✅ Common AArch64 IRQ/timer scaffolding
 1. Add architecture-level helpers for:
-   - reading `CNTFRQ_EL0`,
-   - programming timer interval (`*_TVAL` or `*_CVAL`),
-   - enabling/disabling timer (`*_CTL`),
-   - unmasking/remasking IRQ bit in `DAIF`.
+   - ✅ reading `CNTFRQ_EL0`,
+   - ✅ programming timer interval (`*_TVAL` or `*_CVAL`),
+   - ✅ enabling/disabling timer (`*_CTL`),
+   - ✅ unmasking/remasking IRQ bit in `DAIF`.
 2. Define a small IRQ dispatch contract:
-   - platform code can identify/acknowledge active IRQ,
-   - architecture/kernel code handles timer IRQ and returns resume.
+   - ✅ platform code can identify/acknowledge active IRQ,
+   - ✅ architecture/kernel code handles timer IRQ and returns resume.
 3. Keep exception default behavior panic-first for unknown IRQ causes, but make timer IRQ explicitly resumable.
 
-2.3. `virt` first bring-up (authoritative path)
-1. Implement `platform/virt` GIC init (minimum required for CPU0):
+2.3. ✅ `virt` first bring-up (authoritative path)
+1. ✅ Implement `platform/virt` GIC init (minimum required for CPU0):
    - init distributor + CPU interface path for the emulated GIC version,
    - enable the timer PPI line for CPU0.
-2. Program generic timer periodic interrupt:
+2. ✅ Program generic timer periodic interrupt:
    - pick a fixed interval (for example 10ms or 100Hz),
    - arm timer before unmasking IRQs.
-3. Unmask IRQs only after vector + GIC + timer are ready.
-4. In IRQ handler:
+3. ✅ Unmask IRQs only after vector + GIC + timer are ready.
+4. ✅ In IRQ handler:
    - detect timer interrupt source,
    - increment global monotonic `tick_count`,
    - re-arm timer,
    - send EOI/deactivate as required,
    - return `EXCEPTION_ACTION_RESUME`.
-5. Add shell command `ticks` to print ticks since boot.
+5. ✅ Add shell command `uptime` to print ticks since boot.
 
-2.4. `rpi` follow-up bring-up
-1. Reuse architecture timer code and IRQ flow from `virt`.
-2. Implement `platform/rpi` interrupt-controller init + timer PPI enable based on DT/TRM mapping.
-3. Verify EL2->EL1 timer access configuration remains correct and compatible with selected timer source.
-4. Enable same `ticks` command behavior on `rpi`.
+2.4. ✅ `rpi` follow-up bring-up
+1. ✅ Reuse architecture timer code and IRQ flow from `virt`.
+2. ✅ Implement `platform/rpi` interrupt-controller init + timer PPI enable based on DT/TRM mapping.
+3. ✅ Verify EL2->EL1 timer access configuration remains correct and compatible with selected timer source.
+4. ✅ Enable same `ticks` command behavior on `rpi`.
 
-2.5. Tests and validation
-1. Add host/unit coverage for:
+2.5. ✅ Tests and validation
+1. ✅ Add host/unit coverage for:
    - tick counter API behavior (monotonic increments, reset/init semantics),
    - shell command formatting/parsing for `ticks`.
-2. Add integration smoke for `virt`:
+2. ✅ Add integration smoke for `virt`:
    - boot under QEMU,
    - observe tick count increasing over wall-clock delay,
    - assert IRQ handler returns and system remains interactive.
-3. Keep panic path independent from timer/IRQ availability (consistent with Phase 2.5).
+3. ✅ Keep panic path independent from timer/IRQ availability (consistent with Phase 2.5).
 
 Exit criteria:
-- `virt`: periodic generic timer IRQ is firing on CPU0, tick count increases monotonically, and `ticks` command reports non-zero increasing values.
-- `rpi`: same externally visible behavior (`ticks` increases) using platform-specific interrupt-controller setup.
-- IRQ unknown-source behavior is diagnosable and does not silently continue.
-- QEMU smoke test proves periodic interrupts are actually firing and kernel resumes from IRQ repeatedly.
+- ✅ `virt`: periodic generic timer IRQ is firing on CPU0, tick count increases monotonically, and `ticks` command reports non-zero increasing values.
+- ✅ `rpi`: same externally visible behavior (`ticks` increases) using platform-specific interrupt-controller setup.
+- ✅ IRQ unknown-source behavior is diagnosable and does not silently continue.
+- ✅ QEMU smoke test proves periodic interrupts are actually firing and kernel resumes from IRQ repeatedly.
 
 ## Phase 2.5: Panic UART Drain Reliability
 

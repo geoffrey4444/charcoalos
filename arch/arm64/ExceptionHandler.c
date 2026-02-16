@@ -241,8 +241,9 @@ uint64_t handle_exception(uint64_t *saved_registers,
       return EXCEPTION_ACTION_RESUME;
     }
   } else if (kind_of_exception == EXCEPTION_TYPE_IRQ_EL1_SPX) {
-    handle_interrupt_exception();
-    return EXCEPTION_ACTION_RESUME;
+    if (handle_interrupt_exception()) {
+      return EXCEPTION_ACTION_RESUME;
+    }
   }
 
   // The exception cannot be handled. So now print diagnostics and panic.

@@ -74,12 +74,14 @@ void initialize_timer(void) {
   __asm__ volatile("msr daifclr, #0b0010");
 }
 
-void handle_interrupt_exception(void) {
+bool handle_interrupt_exception(void) {
   // Check if the exception is a timer tick
   uint32_t iar = *(uint32_t*)GICC_IAR;
   // GICC_IAR[9:0] hold the interrupt id, so mask with 2^10-1=0x3ff.
   uint32_t id = iar & 0x3ff;
+  bool handled = false;
   if (id == TIMER_INTERRUPT_ID) {
+    handled = true;
     increment_uptime_by_one_tick();
 
     uint64_t freq_in_hz = read_timer_frequency_in_hz();
@@ -90,6 +92,7 @@ void handle_interrupt_exception(void) {
 
   // Acknowledge finishing handling interrupt exception
   *(uint32_t*)GICC_EOIR = iar;
+  return handled;
 }
 
 void print_timer_diagnostics(void) {

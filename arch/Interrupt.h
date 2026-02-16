@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define INTERRUPT_FREQUENCY_HZ 100
@@ -29,10 +30,10 @@ void initialize_timer(void);
 /*!
  * \brief Handles an interrupt request exception (IRQ).
  * \details The exception handler calls this when it receives an IRQ exception.
- * For now, this function only handles timer interrupts by incrementing the
- * uptime timer.
+ * Returns true when the IRQ source is recognized and handled. Returns false
+ * when the IRQ source is unknown, so higher-level exception code can panic.
  */
-void handle_interrupt_exception(void);
+bool handle_interrupt_exception(void);
 
 /*!
  * \brief Prints timer diagnostics to the console for debugging.
