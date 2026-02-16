@@ -8,6 +8,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// The timer we are using is ID 30 = 0x1e (unsigned)
+#define TIMER_INTERRUPT_ID 0x1eU
+
 uint64_t read_timer_frequency_in_hz(void) {
   uint64_t freq_in_hz;
   __asm__ volatile("mrs %0, CNTFRQ_EL0" : "=r"(freq_in_hz));
@@ -35,23 +38,35 @@ void initialize_timer(void) {
   // Write back to the register
   __asm__ volatile("msr CNTP_CTL_EL0, %0" ::"r"(physical_timer_control_value));
 
-  // Enable interrupts in timer Generic Interrupt Controller (IGC)
-  // Specifically, enable the interrupt for unsecure physical timer,
-  // which is 0xe, but you add 0x10 to get the bit to set in
-  // GICD_ISENABLER0. So set bit 0x1e = bit 30.
-  *(volatile uint32_t*)GICD_ISENABLER0 |= 0x40000000;
+  // Enable interrupts in timer Generic Interrupt Controller (GIC)
+  // for physical timer PPI interrupt ID 30.
+  *(volatile uint32_t*)GICD_ISENABLER0 |= (1u << TIMER_INTERRUPT_ID);
 
   // Set the priority by writing one byte at address GICD_IPRIORITYR + 30.
   // Lower value = higher priority. 0x80 is lower than default 0xFF, but leaves
   // room for more urgent interrupts later.
-  *(volatile uint8_t*)(GICD_IPRIORITYR + 0x1e) = 0x80;
+  *(volatile uint8_t*)(GICD_IPRIORITYR + TIMER_INTERRUPT_ID) = 0x80;
 
   // Set the prioity filter...for now, allow all priorities through (0xff)
-  *(volatile uint8_t*)(GICC_PMR) |= 0xff;
+  *(volatile uint32_t*)GICC_PMR = 0xff;
 
-  // Enable signaling and forwarding interrupts
-  *(volatile uint32_t*)(GICD_CTLR) |= 0x1;
-  *(volatile uint32_t*)(GICC_CTLR) |= 0x1;
+  // Enable signaling and forwarding interrupts.
+#if TARGET_RPI
+  // On Pi, route timer PPI to Group 1 (non-secure EL1) and enable Group 1.
+  *(volatile uint32_t*)GICD_IGROUPR0 |= (1u << TIMER_INTERRUPT_ID);
+  *(volatile uint32_t*)GICD_CTLR |= 0x2;
+  *(volatile uint32_t*)GICC_CTLR |= 0x2;
+#else
+  // On QEMU virt, keep Group 0 behavior used by current smoke tests.
+  *(volatile uint32_t*)GICD_CTLR |= 0x1;
+  *(volatile uint32_t*)GICC_CTLR |= 0x1;
+#endif
+
+  // Data and instruction synchronization barriers: make sure the previous
+  // instructions take effect before continuing
+  // sy means "entire system"
+  __asm__ volatile("dsb sy");
+  __asm__ volatile("isb");
 
   // Enable timer in SPSR_EL1 DAIF
   // This clears the D,A,I,F bits in SPSR_EL1
@@ -63,7 +78,7 @@ void handle_interrupt_exception(void) {
   uint32_t iar = *(uint32_t*)GICC_IAR;
   // GICC_IAR[9:0] hold the interrupt id, so mask with 2^10-1=0x3ff.
   uint32_t id = iar & 0x3ff;
-  if (id == 0x1e) {
+  if (id == TIMER_INTERRUPT_ID) {
     increment_uptime_by_one_tick();
 
     uint64_t freq_in_hz = read_timer_frequency_in_hz();
