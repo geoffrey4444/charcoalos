@@ -58,7 +58,7 @@ if(QEMU_SYSTEM_AARCH64)
     NAME smoke-refactored-virt-console
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
-            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DINPUT_ELF=${REF_VIRT_BIN}
             -DQEMU_MACHINE=virt
             -DQEMU_CPU=max
             -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
@@ -71,7 +71,7 @@ if(QEMU_SYSTEM_AARCH64)
     NAME smoke-refactored-virt-uptime-increases
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
-            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DINPUT_ELF=${REF_VIRT_BIN}
             -DQEMU_MACHINE=virt
             -DQEMU_CPU=max
             -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
@@ -83,7 +83,7 @@ if(QEMU_SYSTEM_AARCH64)
     NAME smoke-refactored-virt-exception-memread
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
-            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DINPUT_ELF=${REF_VIRT_BIN}
             -DQEMU_MACHINE=virt
             -DQEMU_CPU=max
             -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
@@ -97,7 +97,7 @@ if(QEMU_SYSTEM_AARCH64)
     NAME smoke-refactored-virt-trapsvc-resume
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
-            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DINPUT_ELF=${REF_VIRT_BIN}
             -DQEMU_MACHINE=virt
             -DQEMU_CPU=max
             -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
@@ -111,7 +111,7 @@ if(QEMU_SYSTEM_AARCH64)
     NAME smoke-refactored-virt-trapsvc-restart
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
-            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DINPUT_ELF=${REF_VIRT_BIN}
             -DQEMU_MACHINE=virt
             -DQEMU_CPU=max
             -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}
@@ -125,7 +125,7 @@ if(QEMU_SYSTEM_AARCH64)
     NAME smoke-refactored-virt-trapsvc-panic
     COMMAND ${CMAKE_COMMAND}
             -DQEMU_BIN=${QEMU_SYSTEM_AARCH64}
-            -DINPUT_ELF=${REF_VIRT_ELF}
+            -DINPUT_ELF=${REF_VIRT_BIN}
             -DQEMU_MACHINE=virt
             -DQEMU_CPU=max
             -DQEMU_MEMORY=${VIRT_QEMU_MEMORY}

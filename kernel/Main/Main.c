@@ -4,10 +4,11 @@
 #include "kernel/Main/Lifecycle.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
-void kmain(void) {  
+void kmain(uintptr_t dtb) {  
   
-  kernel_init();
+  kernel_init(dtb);
   kernel_run();
   kernel_halt();
 }

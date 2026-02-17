@@ -8,7 +8,7 @@ PHDRS {
 }
 
 SECTIONS {
-  . = 0x40100000;
+  . = 0x40080000;
   .startup . : { boot.o(.text) } /* . : means put code (.text section */
                                  /* of assembled boot.s before anything else */
                                  /* in RAM. */

@@ -104,6 +104,7 @@ add_platform_rpi_target(platform_rpi
 set(REF_VIRT_BUILD_DIR ${CMAKE_BINARY_DIR}/virt)
 set(REF_VIRT_BOOT_O ${REF_VIRT_BUILD_DIR}/boot.o)
 set(REF_VIRT_ELF ${REF_VIRT_BUILD_DIR}/kernel.elf)
+set(REF_VIRT_BIN ${REF_VIRT_BUILD_DIR}/kernel.bin)
 
 add_custom_command(
   OUTPUT ${REF_VIRT_BOOT_O}
@@ -131,7 +132,14 @@ add_custom_command(
           $<TARGET_OBJECTS:platform_virt>
   COMMAND_EXPAND_LISTS
   VERBATIM)
-add_custom_target(refactored-virt DEPENDS ${REF_VIRT_ELF})
+
+add_custom_command(
+  OUTPUT ${REF_VIRT_BIN}
+  COMMAND ${AARCH64_OBJCOPY} -O binary ${REF_VIRT_ELF} ${REF_VIRT_BIN}
+  DEPENDS ${REF_VIRT_ELF}
+  VERBATIM)
+
+add_custom_target(refactored-virt DEPENDS ${REF_VIRT_ELF} ${REF_VIRT_BIN})
 add_custom_target(virt ALL DEPENDS refactored-virt)
 
 set(REF_RPI_BUILD_DIR ${CMAKE_BINARY_DIR}/rpi)
@@ -212,7 +220,7 @@ if(QEMU_SYSTEM_AARCH64)
       -cpu ${VIRT_QEMU_CPU}
       -smp ${VIRT_QEMU_SMP}
       -m ${VIRT_QEMU_MEMORY}
-      -kernel ${REF_VIRT_ELF})
+      -kernel ${REF_VIRT_BIN})
   if(VIRT_QEMU_NOGRAPHIC)
     list(APPEND REF_VIRT_QEMU_RUN_ARGS -nographic)
   endif()

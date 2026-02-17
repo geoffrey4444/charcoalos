@@ -17,6 +17,7 @@ static size_t g_platform_reboot_calls;
 static size_t g_custom_foreground_calls;
 static size_t g_initialize_timer_calls;
 static size_t g_print_timer_diagnostics_calls;
+static const uint32_t g_valid_dtb_magic = 0xedfe0dd0U;
 
 void console_print(const char *string) {
   if (string == NULL) {
@@ -28,6 +29,19 @@ void console_print(const char *string) {
   }
   memcpy(g_tx_buffer + g_tx_index, string, size);
   g_tx_index += size;
+}
+
+void console_print_hex(const void *data, size_t size) {
+  static const char k_hex_digits[] = "0123456789ABCDEF";
+  const uint8_t *bytes = (const uint8_t *)data;
+  for (size_t i = size; i > 0; --i) {
+    const uint8_t byte = bytes[i - 1];
+    if (g_tx_index + 2 > sizeof(g_tx_buffer)) {
+      return;
+    }
+    g_tx_buffer[g_tx_index++] = k_hex_digits[(byte >> 4) & 0x0F];
+    g_tx_buffer[g_tx_index++] = k_hex_digits[byte & 0x0F];
+  }
 }
 
 void halt(void) { ++g_halt_calls; }
@@ -57,17 +71,22 @@ void setUp(void) {
 void tearDown(void) {}
 
 void test_kernel_init_prints_welcome_message(void) {
-  kernel_init();
+  kernel_init((uintptr_t)&g_valid_dtb_magic);
 
   TEST_ASSERT_EQUAL_STRING_LEN(
-      "Initializing timer... done.\n\nWelcome to CharcoalOS.\n", g_tx_buffer,
-      strlen("Initializing timer... done.\n\nWelcome to CharcoalOS.\n"));
+      "Initializing timer... done.\n\n"
+      "Device table blob recognized with magic EDFE0DD0\n"
+      "Welcome to CharcoalOS.\n",
+      g_tx_buffer,
+      strlen("Initializing timer... done.\n\n"
+             "Device table blob recognized with magic EDFE0DD0\n"
+             "Welcome to CharcoalOS.\n"));
   TEST_ASSERT_EQUAL_size_t(1, g_initialize_timer_calls);
   TEST_ASSERT_EQUAL_size_t(1, g_print_timer_diagnostics_calls);
 }
 
 void test_kernel_run_calls_default_shell_client_after_init(void) {
-  kernel_init();
+  kernel_init((uintptr_t)&g_valid_dtb_magic);
   kernel_run();
 
   TEST_ASSERT_EQUAL_size_t(1, g_shell_loop_calls);
