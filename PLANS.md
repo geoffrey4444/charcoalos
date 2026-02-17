@@ -124,22 +124,137 @@ Exit criteria:
 
 ## Phase 3: Memory Management Foundation
 
-1. Parse/define usable RAM region(s) per platform.
-2. Implement page-frame allocator (bitmap or freelist).
-3. Reserve kernel image, stacks, MMIO, and allocator metadata regions.
+Goal:
+- Build a physical-memory allocator that can use all available RAM and is ready for MMU/page-table allocation.
+
+Decision:
+- Keep Phase 3 and Phase 4 separate.
+- Phase 3 owns physical memory discovery + page-frame allocation.
+- Phase 4 consumes that allocator to build page tables and turn on virtual memory.
+- This separation avoids circular bring-up problems and makes debugging much easier.
+
+3.1. RAM discovery strategy (runtime first, hard-coded fallback)
+1. Capture the boot DTB (device tree blob) pointer from boot assembly and pass/store it for C init.
+2. Parse RAM from DTB `memory` node `reg` entries on both `virt` and `rpi`.
+3. Also parse reserved regions (`/memreserve/` and `reserved-memory`) so allocator never hands those out.
+4. If DTB parsing fails, use a conservative fallback RAM region per platform only to boot; keep fallback documented as temporary.
+5. Normalize all discovered RAM ranges:
+   - align start up to 4 KiB page size,
+   - align end down to 4 KiB,
+   - discard empty ranges.
+
+3.2. Reserve regions before allocator init
+1. Build a simple "physical memory map" table with entries marked `USABLE` or `RESERVED`.
+2. Reserve:
+   - kernel image range (`.text/.rodata/.data/.bss`) via linker symbols,
+   - boot/kernel stack range via linker symbols,
+   - MMIO windows (from platform constants and/or DTB ranges),
+   - DTB blob itself,
+   - allocator metadata memory (bitmap + page descriptors).
+3. Keep this reserve API explicit (for example, `pmm_reserve_range(pa_start, pa_end, reason)`), because later phases will reuse it for ELF/user mappings and DMA-safe reservations.
+
+3.3. Allocator choice and data structures
+1. Use a bitmap page-frame allocator now (best minimal base for performance + total-RAM scalability):
+   - 1 bit per 4 KiB page frame (`0=free`, `1=used`),
+   - allocation scan with "next-fit cursor" to avoid always scanning from page 0,
+   - deterministic O(n/word) worst-case scan, very small metadata.
+2. Add a minimal per-page metadata array (`struct page`) now so later phases do not require a rewrite:
+   - `flags` (reserved/kernel/table/etc.),
+   - `refcount` (for shared mappings/COW groundwork),
+   - optional `order_or_next` field reserved for future buddy/slab integration.
+3. Keep allocator API page-granular:
+   - `pmm_alloc_page()`,
+   - `pmm_free_page(pa)`,
+   - `pmm_alloc_pages(count)` (contiguous, first-fit; can be slow initially),
+   - `pmm_mark_used(pa, size)` for reservation plumbing.
+
+3.4. Tests for Phase 3
+1. Unit-test range normalize/reserve overlap behavior.
+2. Unit-test allocate/free determinism and double-free detection.
+3. Unit-test "never allocate reserved frame" invariants.
+4. Add simple stress test: allocate-until-full, then free-all, verify exact frame count.
 
 Exit criteria:
-- Kernel can allocate/free page frames deterministically with tests.
+- Kernel discovers RAM at runtime (DTB path), falls back safely if needed, and can allocate/free page frames deterministically with tests.
+- Reserved regions are never returned by allocator.
+- API is stable enough to back page-table allocation in Phase 4.
 
 ## Phase 4: Virtual Memory (MMU) for EL1 + EL0
 
-1. Build initial page tables.
-2. Enable MMU at EL1 with identity/high-half strategy (pick one and document).
-3. Map user address space region separately from kernel mappings.
-4. Enforce permissions (user non-exec where needed, kernel inaccessible from EL0).
+Goal:
+- Enable MMU at EL1 with kernel in high-half virtual addresses, while deferring full user allocation policy to late Phase 4 / early Phase 5.
+
+4.0. Concepts, acronyms, and registers used in this phase
+1. `MMU`: Memory Management Unit; translates virtual addresses (VA) to physical addresses (PA) and enforces permissions.
+2. `VA` / `PA`: virtual vs physical address.
+3. `EL1` / `EL0`: kernel privilege level vs user privilege level.
+4. `TTBR0_EL1`: Translation Table Base Register 0 (typically user-space page-table root).
+5. `TTBR1_EL1`: Translation Table Base Register 1 (typically kernel high-half page-table root).
+6. `TCR_EL1`: Translation Control Register; chooses page size/granule, VA size, cacheability/shareability defaults, and TTBR split behavior.
+7. `MAIR_EL1`: Memory Attribute Indirection Register; defines attribute encodings (normal cacheable RAM vs device memory).
+8. `SCTLR_EL1`: System Control Register; enabling MMU/caches uses bits `M` (MMU), `C` (data cache), `I` (instruction cache).
+9. `ESR_EL1`: Exception Syndrome Register; tells why a fault happened.
+10. `FAR_EL1`: Fault Address Register; VA that faulted.
+11. `VBAR_EL1`: exception vector base address; must remain valid after MMU switch.
+12. `PXN` / `UXN`: Privileged/User Execute Never page permission bits.
+13. `AF`: Access Flag bit in page descriptors; should be set for mapped pages.
+
+4.1. Virtual address layout (high-half kernel design)
+1. Use 4 KiB granule and 48-bit VA scheme.
+2. Put kernel mappings in high-half via `TTBR1_EL1` (kernel-only).
+3. Keep `TTBR0_EL1` disabled at first (`EPD0=1` in `TCR_EL1`) until user-space mappings are introduced.
+4. During initial bring-up, map both:
+   - identity map for current execution transition safety,
+   - high-half kernel map (final steady-state kernel execution).
+5. After high-half jump is stable, remove identity map in a cleanup step (can be end of Phase 4).
+
+4.2. Page-table build plan
+1. Allocate page-table pages from Phase 3 allocator only.
+2. Implement a reusable `map_range(va, pa, size, attrs)` helper.
+3. Use block mappings where valid (to reduce table count and keep setup fast), and page mappings for fine-grained kernel section permissions.
+4. Map at least:
+   - kernel `.text` as read-only + executable (EL1 only),
+   - kernel `.rodata` as read-only + non-executable,
+   - kernel `.data/.bss/.stack` as read-write + non-executable,
+   - MMIO as Device-nGnRE + non-executable + strongly ordered device semantics.
+5. Keep an early direct-map (physmap) window in high-half so kernel can access physical frames predictably by VA.
+
+4.3. MMU enable sequence (EL1)
+1. Build and zero all needed translation tables in physical memory.
+2. Program `MAIR_EL1` (at minimum):
+   - AttrIdx 0: normal WB/WA cacheable memory,
+   - AttrIdx 1: device nGnRE memory for MMIO.
+3. Program `TCR_EL1` for:
+   - 4 KiB granule (`TG0/TG1`),
+   - desired VA size (`T0SZ/T1SZ`),
+   - shareability/cache policy (`SHx/IRGNx/ORGNx`),
+   - `EPD0=1` initially (disable TTBR0 walks until user-space ready).
+4. Write `TTBR1_EL1` with kernel root table PA; set `TTBR0_EL1` to known-safe value.
+5. Barrier sequence before/after control changes (`DSB ISH`, `ISB`).
+6. Set `SCTLR_EL1.M=1`, `SCTLR_EL1.C=1`, `SCTLR_EL1.I=1`; preserve required RES1 bits.
+7. `ISB`, then branch to a known high-half kernel VA label.
+8. Re-load `VBAR_EL1` with a valid virtual address (if not already high-half-safe).
+
+4.4. Fault diagnostics and validation
+1. Extend exception diagnostics to decode and print `ESR_EL1` class/reason plus `FAR_EL1`.
+2. Add deliberate fault tests:
+   - execute from NX page,
+   - write to read-only page,
+   - touch unmapped VA.
+3. Confirm kernel remains stable with MMU/caches on under timer IRQ load.
+
+4.5. User-space boundary for Phase 4
+1. Keep full user allocator/paging policy out of early Phase 4.
+2. Late Phase 4 (or start Phase 5):
+   - define user VA window under `TTBR0_EL1`,
+   - re-enable walks for TTBR0 (`EPD0=0`) only when first EL0 program path is ready.
+3. Ensure kernel pages are inaccessible to EL0 (`AP`/`PXN`/`UXN` settings) from day one.
 
 Exit criteria:
-- EL1 runs stable with MMU enabled; deliberate bad access produces expected fault diagnostics.
+- EL1 runs stably in high-half virtual space with MMU enabled.
+- Kernel permissions are enforced (`.text` RO+X, writable regions NX, MMIO device attributes).
+- Fault diagnostics show actionable `ESR_EL1` + `FAR_EL1` output.
+- TTBR0/user mappings are structurally prepared but user allocation policy remains deferred to Phase 5 entry.
 
 ## Phase 5: EL0 Entry + Minimal Syscall ABI
 
@@ -277,4 +392,7 @@ Exit criteria:
 
 ## Immediate Next Step
 
-Implement Phase 2 on `virt` first: timer IRQ path + tick counter + smoke test that proves periodic interrupts are actually firing.
+Implement Phase 3.1 and 3.2 first:
+1. Capture/pass DTB pointer into C init.
+2. Build RAM/reserved range table and reservation API.
+3. Add a minimal bitmap allocator over 4 KiB page frames.
