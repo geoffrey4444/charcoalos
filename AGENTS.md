@@ -52,3 +52,4 @@ This repository is for learning kernel development on AArch64 by building small,
 - Preserve AArch64-only scope unless explicitly requested otherwise.
 - Prefer edits that improve the refactored `kernel` + `arch` + `platform` structure while keeping minimal examples working.
 - Do not remove manual build/run instructions from minimal examples unless equivalent CMake targets remain available and verified.
+- Prefer output-first parameter order in function signatures (for example, `out_*` pointers before input arguments).
