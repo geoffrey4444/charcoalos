@@ -4,6 +4,7 @@
 #include "kernel/Main/Lifecycle.h"
 #include "kernel/Panic/Panic.h"
 #include "kernel/Panic/Restart.h"
+#include "kernel/Hardware/DeviceTree.h"
 #include "unity.h"
 
 #include <stddef.h>
@@ -54,6 +55,15 @@ void print_timer_diagnostics(void) { ++g_print_timer_diagnostics_calls; }
 
 void platform_reboot(void) { ++g_platform_reboot_calls; }
 
+void parse_device_tree_blob(struct hardware_info *out_hw_info, uintptr_t dtb) {
+  (void)dtb;
+  if (out_hw_info == NULL) {
+    return;
+  }
+  out_hw_info->header.magic = g_valid_dtb_magic;
+  console_print("Device table blob recognized with magic EDFE0DD0\n");
+}
+
 static void custom_foreground_client(void) { ++g_custom_foreground_calls; }
 
 void setUp(void) {
@@ -74,11 +84,13 @@ void test_kernel_init_prints_welcome_message(void) {
   kernel_init((uintptr_t)&g_valid_dtb_magic);
 
   TEST_ASSERT_EQUAL_STRING_LEN(
-      "Initializing timer... done.\n\n"
+      "Initializing timer... done.\n"
+      "Parsing device tree blob for hardware information...\n"
       "Device table blob recognized with magic EDFE0DD0\n"
       "Welcome to CharcoalOS.\n",
       g_tx_buffer,
-      strlen("Initializing timer... done.\n\n"
+      strlen("Initializing timer... done.\n"
+             "Parsing device tree blob for hardware information...\n"
              "Device table blob recognized with magic EDFE0DD0\n"
              "Welcome to CharcoalOS.\n"));
   TEST_ASSERT_EQUAL_size_t(1, g_initialize_timer_calls);

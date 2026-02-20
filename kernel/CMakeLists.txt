@@ -12,6 +12,7 @@ function(add_kernel_common_target target_name)
   set(kernel_common_sources
     ${kernel_dir}/Console/IO.c
     ${kernel_dir}/Console/Shell.c
+    ${kernel_dir}/Hardware/DeviceTree.c
     ${kernel_dir}/Main/Lifecycle.c
     ${kernel_dir}/Main/Main.c
     ${kernel_dir}/Panic/Panic.c
