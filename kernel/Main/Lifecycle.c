@@ -27,7 +27,7 @@ void kernel_init(uintptr_t dtb) {
   console_print("done.\n");
 
   console_print("Parsing device tree blob for hardware information...\n");
-  struct hardware_info hw_info = {0};
+  static struct hardware_info hw_info = {0};
   parse_device_tree_blob(&hw_info, dtb);
 
   console_print("Welcome to CharcoalOS.\n");

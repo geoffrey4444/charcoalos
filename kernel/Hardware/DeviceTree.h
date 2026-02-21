@@ -9,8 +9,7 @@
  * \brief The device tree blob header.
  * \details The header contains information on how to parse the dtb; it is
  * provided as a series of big-endian 32-bit integers at the start of the 
- * dtb. `__attribute((packed))` prevents the compiler from adding padding
- * to the struct entries.
+ * dtb.
  */
 struct dtb_header {
   uint32_t magic;
@@ -32,6 +31,9 @@ struct dtb_header {
  */
 struct hardware_info {
   struct dtb_header header;
+  uint64_t reserved_region_base_addresses[255];
+  uint64_t reserved_region_sizes[255];
+  uint64_t reserved_regions_count;
 };
 
 /*!
