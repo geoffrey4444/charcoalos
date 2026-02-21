@@ -273,6 +273,9 @@ void parse_device_tree_blob(struct hardware_info *out_hw_info, uintptr_t dtb) {
         console_print(" -- size 0x");
         console_print_hex((void *)&prop_length, 4);
         console_print("\n");
+        console_print("    Value (hex bytes): ");
+        console_print_hex(current_data_bytes, prop_length);
+        console_print("\n");
         break;
       case FDT_NOP:
         // Do nothing
