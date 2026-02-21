@@ -6,6 +6,13 @@
 #include "kernel/Hardware/Endian.h"
 #include "kernel/Panic/Panic.h"
 
+// Bytes I can encounter when parsing the dtb
+#define FDT_BEGIN_NODE 0x1
+#define FDT_END_NODE 0x2
+#define FDT_PROP 0x3
+#define FDT_NOP 0x4
+#define FDT_END 0x9
+
 void parse_device_tree_blob(struct hardware_info *out_hw_info, uintptr_t dtb) {
   if (!out_hw_info) {
     kernel_panic("The hardware info output pointer is null");
@@ -133,5 +140,161 @@ void parse_device_tree_blob(struct hardware_info *out_hw_info, uintptr_t dtb) {
       console_print("\n");
     }
     ++i;
+  }
+  console_print("Read 0x");
+  console_print_hex((void *)&(out_hw_info->reserved_regions_count), 8);
+  console_print(" reserved memory regions.\n");
+
+  // Walk the table
+  char *node_name = "";
+  size_t node_name_length = 0;
+  uint32_t prop_length = 0;
+  uint32_t prop_name_offset = 0;
+  void *current_data_bytes = NULL;
+  uint64_t node_depth = 0;
+  uint64_t end_tokens_encountered = 0;
+  uintptr_t struct_end = (uintptr_t)(dtb) +
+                         (uintptr_t)(out_hw_info->header.off_dt_struct) +
+                         (uintptr_t)(out_hw_info->header.size_dt_struct);
+  uintptr_t dtb_cursor =
+      (uintptr_t)(dtb) + (uintptr_t)(out_hw_info->header.off_dt_struct);
+  // Loop while cursor is 4 or more bytes from end of struct block
+  // Guard against overflow
+  while (true) {
+    // Bounds check: if cursor out of bounds, panic
+    if (dtb_cursor > struct_end) {
+      kernel_panic("Malformed DTB: cursor out of bounds");
+      return;
+    }
+    // End loop if not at least 4 bytes from struct end
+    if (struct_end - dtb_cursor < 4) {
+      break;
+    }
+
+    // Read token, advance cursor, and check not out of bounds
+    uint32_t token = read_be32_from_address(dtb_cursor);
+    dtb_cursor += 4;  // advance cursor past uint32_t token
+    if (dtb_cursor > struct_end) {
+      kernel_panic("Malformed DTB: token overflow");
+      return;
+    }
+
+    // Handle the token
+    switch (token) {
+      case FDT_BEGIN_NODE:
+        ++node_depth;
+        // Get node name
+        node_name = (char *)(dtb_cursor);
+        // Advance cursor beyond node name string's null terminator, guarding
+        // against overflow
+        node_name_length = 0;
+        if (dtb_cursor == struct_end) {
+          kernel_panic("Malformed DTB: cannot parse node name");
+          return;
+        }
+        while (*(char *)(dtb_cursor) != '\0') {
+          if (dtb_cursor + 1 > struct_end) {
+            kernel_panic("Malformed DTB: immediate node name overflow");
+            return;
+          }
+          ++node_name_length;
+          ++dtb_cursor;
+          // Before going back and doing the loop check, guard against overflow
+          if (dtb_cursor == struct_end) {
+            kernel_panic("Malformed DTB: node name overflow");
+            return;
+          }
+        }
+        ++dtb_cursor;  // advance past null terminator
+        // Align to 4-bytes
+        while (dtb_cursor % 4) {
+          ++dtb_cursor;
+        }
+        if (dtb_cursor > struct_end) {
+          kernel_panic("Malformed DTB: token overflow after align");
+          return;
+        }
+        // Print info to console
+        console_print("Read DTB node: ");
+        console_print(node_name);
+        console_print("\n");
+        break;
+      case FDT_END_NODE:
+        if (node_depth == 0) {
+          kernel_panic(
+              "Malformed DTB: end node token without matching begin node "
+              "token");
+          return;
+        }
+        --node_depth;
+        break;
+      case FDT_PROP:
+        // Before proceeding, ensure that reading property length and
+        // name offset will not overflow. Use
+        // struct_end - dtb_cursor < 8 instead of dtb_cursor + 8 > struct_end
+        // to avoid dtb_cursor +8 overflowing uintptr_t.
+        if (struct_end - dtb_cursor < 8) {
+          kernel_panic("Malformed DTB: property metadata overflow");
+          return;
+        }
+        prop_length = read_be32_from_address(dtb_cursor);
+        dtb_cursor += 4;
+        prop_name_offset = read_be32_from_address(dtb_cursor);
+        dtb_cursor += 4;
+        current_data_bytes = (void *)(dtb_cursor);
+        // Guard against overflow. dtb_cursor + prop_length > struct_end is
+        // trouble. But check this way to also catch case where
+        // prop_length + dtb_cursor overflows
+        if (prop_length > struct_end - dtb_cursor) {
+          kernel_panic("Malformed DTB: property length overflow");
+          return;
+        }
+        dtb_cursor += prop_length;
+        // Align to 4-byte boundary
+        while (dtb_cursor % 4) {
+          ++dtb_cursor;
+        }
+        // Guard against overflow, since we're readying a number of bytes
+        // determined at runtime
+        if (dtb_cursor > struct_end) {
+          kernel_panic("Malformed DTB: property value overflow");
+          return;
+        }
+        // Guard against string table overflow
+        if (prop_name_offset >= out_hw_info->header.size_dt_strings) {
+          kernel_panic("Malformed DTB: property name overflow");
+          return;
+        }
+
+        // Print out identified property name and its size
+        console_print("  Property read: ");
+        console_print((char *)(dtb + out_hw_info->header.off_dt_strings +
+                               prop_name_offset));
+        console_print(" -- size 0x");
+        console_print_hex((void *)&prop_length, 4);
+        console_print("\n");
+        break;
+      case FDT_NOP:
+        // Do nothing
+        break;
+      case FDT_END:
+        ++end_tokens_encountered;
+        // Move cursor to end, so while loop terminates
+        dtb_cursor = struct_end;
+        break;
+      default:
+        kernel_panic("Malformed DTB: Unrecognized DTB token");
+        return;
+    }
+  }
+  // Check all node start tokens balanced by node end tokens.
+  if (node_depth != 0) {
+    kernel_panic("Malformed DTB: node begin / end token mismatch");
+    return;
+  }
+  // Check end token was encountered once
+  if (end_tokens_encountered != 1u) {
+    kernel_panic(
+        "Malformed DTB: DTB did not include exactly one FDT_END token");
   }
 }
