@@ -16,7 +16,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static const struct shell_command commands[] = {
+static const struct ShellCommand commands[] = {
     {"add", "Add two unsigned hex numbers", add_handler},
     {"help", "Display this help message", help_handler},
     {"info", "Display information for debugging", info_handler},
@@ -30,7 +30,7 @@ size_t shell_number_of_commands(void) {
   return sizeof(commands) / sizeof(commands[0]);
 }
 
-struct shell_command shell_command_at(size_t index) {
+struct ShellCommand shell_command_at(size_t index) {
   if (index >= shell_number_of_commands()) {
     kernel_panic("Requested shell command that does not exist");
   }
@@ -121,7 +121,7 @@ int add_handler(size_t argc, const char *const *argv) {
   uint64_t a = console_uint64_from_hex(argv[1]);
   uint64_t b = console_uint64_from_hex(argv[2]);
   uint64_t result = a + b;
-  console_print_hex((const void *)&result, 8);
+  console_print_hex_value((const void *)&result, 8);
   console_print("\n");
   return 0;
 }
@@ -166,7 +166,7 @@ int info_handler(size_t argc, const char *const *argv) {
   console_print("Pointer size (bytes): 0x");
   const size_t pointer_size = sizeof(void *);
   data[0] = pointer_size;
-  console_print_hex(data, 1);
+  console_print_hex_value(data, 1);
   console_print("\n");
 
   console_print("Hosted C environment: ");
@@ -178,31 +178,31 @@ int info_handler(size_t argc, const char *const *argv) {
 
   console_print("MMIO base address: 0x");
   uintptr_t mmio_address = mmio_base_address();
-  console_print_hex((const void *)&mmio_address, pointer_size);
+  console_print_hex_value((const void *)&mmio_address, pointer_size);
   console_print("\n");
   console_print("UART base address: 0x");
   uintptr_t uart_address = uart_base_address();
-  console_print_hex((const void *)&uart_address, pointer_size);
+  console_print_hex_value((const void *)&uart_address, pointer_size);
   console_print("\n");
 
   console_print("Stack pointer: 0x");
   uintptr_t stack_pointer = stack_pointer_address();
-  console_print_hex((const void *)&stack_pointer, pointer_size);
+  console_print_hex_value((const void *)&stack_pointer, pointer_size);
   console_print("\n");
 
   console_print("Current exception level: 0x");
   data[0] = current_exception_level();
-  console_print_hex(data, 1);
+  console_print_hex_value(data, 1);
   console_print("\n");
 
   console_print("MPIDR_EL1: 0x");
   size_t mpidr = mpidr_el1();
-  console_print_hex((const void *)&mpidr, pointer_size);
+  console_print_hex_value((const void *)&mpidr, pointer_size);
   console_print("\n");
 
   console_print("SCTLR_EL1: 0x");
   size_t sctlr = sctlr_el1();
-  console_print_hex((const void *)&sctlr, pointer_size);
+  console_print_hex_value((const void *)&sctlr, pointer_size);
   console_print("\n");
 
   console_print("Architecture: ");
@@ -215,24 +215,24 @@ int info_handler(size_t argc, const char *const *argv) {
 
   console_print("System clock frequency (Hz): 0x");
   const uint64_t system_clock_freq = read_timer_frequency_in_hz();
-  console_print_hex((void *)&system_clock_freq, 8);
+  console_print_hex_value((void *)&system_clock_freq, 8);
   console_print("\n");
 
   console_print("Interrupt timer ticks per second: 0x");
   const uint64_t interrupt_freq = interrupt_frequency_in_hz();
-  console_print_hex((void *)&interrupt_freq, 8);
+  console_print_hex_value((void *)&interrupt_freq, 8);
   console_print("\n");
 
   console_print("3.125 (hex): 0x");
   const double x = 3.125;
-  console_print_hex((void *)&x, 8);
+  console_print_hex_value((void *)&x, 8);
   console_print("\n");
 
   console_print("sqrt(2): 0x");
   double y = 2.0;
   __asm__ volatile("fsqrt %d0, %d1" : "=w"(y) : "w"(y));
   // inline assembly to take hardware sqrt, since no math.h yet
-  console_print_hex((void *)&y, 8);
+  console_print_hex_value((void *)&y, 8);
   console_print("\n");
 
   return 0;
@@ -241,10 +241,10 @@ int info_handler(size_t argc, const char *const *argv) {
 int memread_handler(size_t argc, const char *const *argv) {
   for (size_t i = 1; i < argc; ++i) {
     uintptr_t address = (uintptr_t)console_uint64_from_hex(argv[i]);
-    console_print_hex((const void *)&address, 8);
+    console_print_hex_value((const void *)&address, 8);
     console_print("    ");
     size_t contents = *((size_t *)address);
-    console_print_hex((const void *)&contents, 8);
+    console_print_hex_value((const void *)&contents, 8);
     console_print("\n");
   }
   return 0;
@@ -291,7 +291,7 @@ int uptime_handler(size_t argc, const char *const *argv) {
   (void)argv;
   const uint64_t uptime_seconds = uptime();
   console_print("0x");
-  console_print_hex((void *)&uptime_seconds, 8);
+  console_print_hex_value((void *)&uptime_seconds, 8);
   console_print("\n");
   return 0;
 }

@@ -259,7 +259,7 @@ uint64_t handle_exception(uint64_t *saved_registers,
       return EXCEPTION_ACTION_RESTART;      
     } else if (system_call_number_requested != 0x7777) {
       console_print("System call received: 0x");
-      console_print_hex((void *)&system_call_number_requested, 8);
+      console_print_hex_value((void *)&system_call_number_requested, 8);
       console_print("\n");
       g_exception_in_progress = 0;
       return EXCEPTION_ACTION_RESUME;
@@ -283,37 +283,37 @@ uint64_t handle_exception(uint64_t *saved_registers,
   // just print error information and panic, regardless of the type
   console_print("\n\nSorry, a system error has occurred.\n");
   console_print("Type =  0x");
-  console_print_hex((void *)&kind_of_exception, 8);
+  console_print_hex_value((void *)&kind_of_exception, 8);
   console_print(" = ");
   console_print(exception_type_string(kind_of_exception));
   console_print("\n");
 
   console_print("Class = 0x");
-  console_print_hex((void *)&exception_class, 8);
+  console_print_hex_value((void *)&exception_class, 8);
   console_print(" = ");
   console_print(exception_class_to_string(exception_class));
   console_print("\nISS   = 0x");
-  console_print_hex((void *)&iss, 8);
+  console_print_hex_value((void *)&iss, 8);
   console_print("\n\n");
 
   console_print("ESR_EL1:  0x");
-  console_print_hex((void *)&esr_el1_value, 8);
+  console_print_hex_value((void *)&esr_el1_value, 8);
   console_print("\nELR_EL1:  0x");
-  console_print_hex((void *)&elr_el1_value, 8);
+  console_print_hex_value((void *)&elr_el1_value, 8);
   console_print("\nSPSR_EL1: 0x");
-  console_print_hex((void *)&spsr_value, 8);
+  console_print_hex_value((void *)&spsr_value, 8);
   console_print("\nFAR_EL1:  0x");
-  console_print_hex((void *)&far_value, 8);
+  console_print_hex_value((void *)&far_value, 8);
   console_print("\n\n");
 
   // Now let's print the saved registers (on arm64, save 32 registers)
   console_print("Saved registers (Register Value): \n");
   for (uint64_t i = 0; i < 32; ++i) {
     console_print("0x");
-    console_print_hex((void *)&i, 8);
+    console_print_hex_value((void *)&i, 8);
     console_print(" 0x");
     const uint64_t register_value = saved_registers[i];
-    console_print_hex((void *)&register_value, 8);
+    console_print_hex_value((void *)&register_value, 8);
     console_print("\n");
   }
 

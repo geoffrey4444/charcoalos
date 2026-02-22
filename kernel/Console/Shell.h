@@ -16,7 +16,7 @@
  * \param help_text Brief description of the command
  * \param handler The function that handles the command
  */
-struct shell_command {
+struct ShellCommand {
   const char *name;
   const char *help_text;
   int (*handler)(size_t argc, const char *const *argv);
@@ -34,7 +34,7 @@ size_t shell_number_of_commands(void);
  * \param index The index of the command to return
  * \returns The shell command at index `index`
  */
-struct shell_command shell_command_at(size_t index);
+struct ShellCommand shell_command_at(size_t index);
 
 /*!
  * \brief Function that handles the add shell command

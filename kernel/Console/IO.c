@@ -2,6 +2,7 @@
 // See LICENSE.txt for details.
 
 #include "kernel/Console/IO.h"
+#include "kernel/Hardware/Endian.h"
 #include "kernel/String/String.h"
 #include "platform/IO.h"
 
@@ -89,12 +90,42 @@ void console_read_line(char* text, size_t size, bool echo) {
   return;
 }
 
-void console_print_hex(const void* data, size_t size) {
+void console_print_hex_value(const void* data, size_t size) {
+  if (CHARCOALOS_BIG_ENDIAN) {
+    console_print_hex_bytes(data, size);
+    return;
+  }
   uint8_t byte;
   uint8_t lo;
   uint8_t hi;
   for (size_t i = size; i > 0; --i) {
     byte = ((char*)data)[i - 1];
+    lo = (byte & 15);
+    if (lo > 9) {
+      lo += ('A' - 10);
+    } else {
+      lo += '0';
+    }
+
+    hi = ((byte >> 4) & 15);
+    if (hi > 9) {
+      hi += ('A' - 10);
+    } else {
+      hi += '0';
+    }
+
+    console_putc(hi);
+    console_putc(lo);
+  }
+  return;
+}
+
+void console_print_hex_bytes(const void* data, size_t size) {
+  uint8_t byte;
+  uint8_t lo;
+  uint8_t hi;
+  for (size_t i = 0; i < size; ++i) {
+    byte = ((char*)data)[i];
     lo = (byte & 15);
     if (lo > 9) {
       lo += ('A' - 10);

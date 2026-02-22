@@ -100,10 +100,10 @@ void print_timer_diagnostics(void) {
   uint32_t gicd_iidr = *(volatile uint32_t*)GICD_IIDR;
   uint32_t gicc_iidr = *(volatile uint32_t*)GICC_IIDR;
   console_print("Timer diagnostics\n  GICD_TYPER: 0x");
-  console_print_hex((void*)&gicd_typer, 4);
+  console_print_hex_value((void*)&gicd_typer, 4);
   console_print("\n  GICD_IIDR:  0x");
-  console_print_hex((void*)&gicd_iidr, 4);
+  console_print_hex_value((void*)&gicd_iidr, 4);
   console_print("\n  GICC_IIDR:  0x");
-  console_print_hex((void*)&gicc_iidr, 4);
+  console_print_hex_value((void*)&gicc_iidr, 4);
   console_print("\n");
 }

@@ -32,7 +32,7 @@ void console_print(const char *string) {
   g_tx_index += size;
 }
 
-void console_print_hex(const void *data, size_t size) {
+void console_print_hex_value(const void *data, size_t size) {
   static const char k_hex_digits[] = "0123456789ABCDEF";
   const uint8_t *bytes = (const uint8_t *)data;
   for (size_t i = size; i > 0; --i) {
@@ -55,7 +55,7 @@ void print_timer_diagnostics(void) { ++g_print_timer_diagnostics_calls; }
 
 void platform_reboot(void) { ++g_platform_reboot_calls; }
 
-void parse_device_tree_blob(struct hardware_info *out_hw_info, uintptr_t dtb) {
+void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
   (void)dtb;
   if (out_hw_info == NULL) {
     return;

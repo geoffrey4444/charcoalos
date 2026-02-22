@@ -164,7 +164,7 @@ void test_console_print_hex_outputs_bytes_in_most_significant_first_order(void) 
   const uint8_t bytes[] = {0xEF, 0xCD, 0xAB, 0x90};
   const char expected[] = "90ABCDEF";
 
-  console_print_hex(bytes, sizeof(bytes));
+  console_print_hex_value(bytes, sizeof(bytes));
 
   TEST_ASSERT_EQUAL_size_t(sizeof(expected) - 1, g_tx_index);
   TEST_ASSERT_EQUAL_MEMORY(expected, g_tx_buffer, sizeof(expected) - 1);

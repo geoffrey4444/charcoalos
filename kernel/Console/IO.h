@@ -54,11 +54,22 @@ void console_read(char *buffer, size_t size);
 void console_read_line(char *buffer, size_t size, bool echo);
 
 /*!
- * \brief Prints data as a hex string
+ * \brief Prints a numerical value as a hex string
+ * \details Bytes are printed in reverse memory order (i.e. most significant
+ * byte first) with no prefix).
  * \param data The bytes to print as hex
  * \param size The size of the data to print in bytes
  */
-void console_print_hex(const void *data, size_t size);
+void console_print_hex_value(const void *data, size_t size);
+
+/*!
+ * \brief Prints a series of bytes as a hex string
+ * \details Bytes are printed in reverse memory order (i.e. most significant
+ * byte first) with no prefix).
+ * \param data The bytes to print as hex
+ * \param size The size of the data to print in bytes
+ */
+void console_print_hex_bytes(const void* data, size_t size);
 
 /*! 
  * \brief Returns a 64-bit unsigned integer from a hex string

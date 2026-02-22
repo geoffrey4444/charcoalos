@@ -194,7 +194,7 @@ void test_shell_command_at_exposes_expected_commands_without_order_assumptions(
   TEST_ASSERT_TRUE(number_of_commands > 0);
 
   for (size_t i = 0; i < number_of_commands; ++i) {
-    const struct shell_command command = shell_command_at(i);
+    const struct ShellCommand command = shell_command_at(i);
     TEST_ASSERT_NOT_NULL(command.name);
     TEST_ASSERT_NOT_NULL(command.help_text);
     TEST_ASSERT_NOT_NULL(command.handler);
@@ -265,7 +265,8 @@ void test_panic_handler_prints_message_and_calls_halt(void) {
   TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
 }
 
-void test_panic_handler_with_argument_prints_message_argument_and_calls_halt(void) {
+void test_panic_handler_with_argument_prints_message_argument_and_calls_halt(
+    void) {
   const char *args[] = {"Error code"};
   const int result = panic_handler(1, args);
 
@@ -274,7 +275,8 @@ void test_panic_handler_with_argument_prints_message_argument_and_calls_halt(voi
   TEST_ASSERT_EQUAL_size_t(1, g_halt_calls);
 }
 
-void test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt(void) {
+void test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt(
+    void) {
   const char *args[] = {"panic", "Error code"};
   const int result = panic_handler(2, args);
 
@@ -322,18 +324,17 @@ void test_memread_handler_prints_address_and_contents(void) {
   const size_t value = 0x0123456789ABCDEFu;
   char address_text[32] = {0};
   char expected[64] = {0};
-  const int address_len =
-      snprintf(address_text, sizeof(address_text), "0x%llX",
-               (unsigned long long)(uintptr_t)&value);
+  const int address_len = snprintf(address_text, sizeof(address_text), "0x%llX",
+                                   (unsigned long long)(uintptr_t)&value);
   TEST_ASSERT_TRUE(address_len > 0);
   const char *args[] = {"memread", address_text};
 
   const int result = memread_handler(2, args);
 
   TEST_ASSERT_EQUAL_INT(0, result);
-  const int expected_len =
-      snprintf(expected, sizeof(expected), "%016llX    %016llX\r\n",
-               (unsigned long long)(uintptr_t)&value, (unsigned long long)value);
+  const int expected_len = snprintf(
+      expected, sizeof(expected), "%016llX    %016llX\r\n",
+      (unsigned long long)(uintptr_t)&value, (unsigned long long)value);
   TEST_ASSERT_TRUE(expected_len > 0);
   assert_tx_equals(expected);
 }
@@ -388,7 +389,8 @@ void test_print_prompt_outputs_expected_prompt(void) {
   assert_tx_equals("> ");
 }
 
-void test_run_shell_loop_prints_prompt_dispatches_input_and_prompts_again(void) {
+void test_run_shell_loop_prints_prompt_dispatches_input_and_prompts_again(
+    void) {
   const char input[] = "help\n";
   load_rx(input, sizeof(input) - 1);
   g_break_shell_loop_on_rx_exhausted = true;
@@ -422,8 +424,10 @@ int main(void) {
   RUN_TEST(test_info_handler_prints_expected_info_fields);
   RUN_TEST(test_dispatch_command_info_prints_expected_info_fields);
   RUN_TEST(test_panic_handler_prints_message_and_calls_halt);
-  RUN_TEST(test_panic_handler_with_argument_prints_message_argument_and_calls_halt);
-  RUN_TEST(test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt);
+  RUN_TEST(
+      test_panic_handler_with_argument_prints_message_argument_and_calls_halt);
+  RUN_TEST(
+      test_panic_handler_with_two_arguments_prints_second_argument_and_calls_halt);
   RUN_TEST(test_dispatch_command_panic_prints_message_and_calls_halt);
   RUN_TEST(test_reboot_handler_calls_platform_reboot);
   RUN_TEST(test_dispatch_command_reboot_calls_platform_reboot);
@@ -434,7 +438,8 @@ int main(void) {
   RUN_TEST(test_uptime_handler_prints_fixed_width_hex_milliseconds);
   RUN_TEST(test_dispatch_command_uptime_prints_uptime);
   RUN_TEST(test_print_prompt_outputs_expected_prompt);
-  RUN_TEST(test_run_shell_loop_prints_prompt_dispatches_input_and_prompts_again);
+  RUN_TEST(
+      test_run_shell_loop_prints_prompt_dispatches_input_and_prompts_again);
   RUN_TEST(test_tokenize_command_respects_max_tokens);
   return UNITY_END();
 }
