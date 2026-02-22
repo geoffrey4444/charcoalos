@@ -152,7 +152,7 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
   // Walk the table
   void *current_node_reg = NULL;
   uint32_t current_node_reg_size = 0;
-  char *current_node_device_type = NULL;
+  bool current_node_is_physical_memory = false;
 
   // Keep track of depth and contextwhile traversing the DTB
   struct DTBContext context[DTB_MAX_DEPTH];
@@ -249,7 +249,7 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
 
         // Set current_node_device_type and current_node_reg to NULL; these
         // have not yet been read for this new element
-        current_node_device_type = NULL;
+        current_node_is_physical_memory = false;
         current_node_reg = NULL;
 
         // Print info to console
@@ -353,74 +353,72 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
           if (prop_length == 7 &&
               string_compare_with_length((char *)current_data_bytes, "memory",
                                          6, true)) {
-            current_node_device_type = "memory";
+            current_node_is_physical_memory = true;
           }
         } else if (string_compare_with_length(prop_name, "reg", 3, true)) {
           current_node_reg = current_data_bytes;
           current_node_reg_size = prop_length;
         }
-        if (current_node_reg) {
-          if (string_compare_with_length(current_node_device_type, "memory", 6,
-                                         true)) {
-            // Current node specifies physical memory: device_type == "memory"
-            // and reg is a property of the current node
-            // Use address and cells of parent node, not current node, unless
-            // node is the root node (should not happen). In that case, try to
-            // find #address-cells and #size-cells in the root node, but they
-            // most likely will be undefined.
-            if (context[node_depth > 0 ? node_depth - 1 : node_depth]
-                        .address_cells > 0 &&
+
+        if (current_node_reg && current_node_is_physical_memory) {
+          // Current node specifies physical memory: device_type == "memory"
+          // and reg is a property of the current node
+          // Use address and cells of parent node, not current node, unless
+          // node is the root node (should not happen). In that case, try to
+          // find #address-cells and #size-cells in the root node, but they
+          // most likely will be undefined.
+          if (context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .address_cells > 0 &&
+              context[node_depth > 0 ? node_depth - 1 : node_depth].size_cells >
+                  0) {
+            get_memory_regions(
+                out_hw_info->physical_memory_regions,
+                &(out_hw_info->physical_memory_region_count),
                 context[node_depth > 0 ? node_depth - 1 : node_depth]
-                        .size_cells > 0) {
-              get_memory_regions(
-                  out_hw_info->physical_memory_regions,
-                  &(out_hw_info->physical_memory_region_count),
-                  context[node_depth > 0 ? node_depth - 1 : node_depth]
-                      .address_cells,
-                  context[node_depth > 0 ? node_depth - 1 : node_depth]
-                      .size_cells,
-                  current_node_reg, current_node_reg_size);
-              out_hw_info->address_cells =
-                  context[node_depth > 0 ? node_depth - 1 : node_depth]
-                      .address_cells;
-              out_hw_info->size_cells =
-                  context[node_depth > 0 ? node_depth - 1 : node_depth]
-                      .size_cells;
-              // Reset node state after reading the regions from this node, to
-              // avoid duplicate region adds
-              current_node_reg = NULL;
-              current_node_reg_size = 0;
-              current_node_device_type = NULL;
-            } else {
-              kernel_panic(
-                  "Malformed DTB: must initialize both address cells and size "
-                  "cells before reading memory reg");
-              return;
-            }
-          } else if (context[node_depth].in_reserved_memory_subtree) {
-            if (context[node_depth > 0 ? node_depth - 1 : node_depth]
-                        .address_cells > 0 &&
+                    .address_cells,
                 context[node_depth > 0 ? node_depth - 1 : node_depth]
-                        .size_cells > 0) {
-              get_memory_regions(
-                  out_hw_info->reserved_memory_regions,
-                  &(out_hw_info->reserved_memory_regions_count),
-                  context[node_depth > 0 ? node_depth - 1 : node_depth]
-                      .address_cells,
-                  context[node_depth > 0 ? node_depth - 1 : node_depth]
-                      .size_cells,
-                  current_node_reg, current_node_reg_size);
-              // Reset node state after reading the regions from this node, to
-              // avoid duplicate region adds
-              current_node_reg = NULL;
-              current_node_reg_size = 0;
-              current_node_device_type = NULL;
-            } else {
-              kernel_panic(
-                  "Malformed DTB: must initialize address cells and size cells "
-                  "before reading reserved memory regions");
-              return;
-            }
+                    .size_cells,
+                current_node_reg, current_node_reg_size);
+            out_hw_info->address_cells =
+                context[node_depth > 0 ? node_depth - 1 : node_depth]
+                    .address_cells;
+            out_hw_info->size_cells =
+                context[node_depth > 0 ? node_depth - 1 : node_depth]
+                    .size_cells;
+            // Reset node state after reading the regions from this node, to
+            // avoid duplicate region adds
+            current_node_reg = NULL;
+            current_node_reg_size = 0;
+            current_node_is_physical_memory = false;
+          } else {
+            kernel_panic(
+                "Malformed DTB: must initialize both address cells and size "
+                "cells before reading memory reg");
+            return;
+          }
+        } else if (current_node_reg &&
+                   context[node_depth].in_reserved_memory_subtree) {
+          if (context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .address_cells > 0 &&
+              context[node_depth > 0 ? node_depth - 1 : node_depth].size_cells >
+                  0) {
+            get_memory_regions(
+                out_hw_info->reserved_memory_regions,
+                &(out_hw_info->reserved_memory_regions_count),
+                context[node_depth > 0 ? node_depth - 1 : node_depth]
+                    .address_cells,
+                context[node_depth > 0 ? node_depth - 1 : node_depth]
+                    .size_cells,
+                current_node_reg, current_node_reg_size);
+            // Reset node state after reading the regions from this node, to
+            // avoid duplicate region adds
+            current_node_reg = NULL;
+            current_node_reg_size = 0;
+          } else {
+            kernel_panic(
+                "Malformed DTB: must initialize address cells and size cells "
+                "before reading reserved memory regions");
+            return;
           }
         }
 
