@@ -114,6 +114,17 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/platform/Reboot.h)
 
   add_host_unity_test(
+    NAME unit-memory-regions
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/MemoryRegionsTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.h
+      ${CMAKE_SOURCE_DIR}/kernel/Panic/Panic.h
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
+      ${CMAKE_SOURCE_DIR}/kernel/Hardware/Endian.h)
+
+  add_host_unity_test(
     NAME unit-uptime
     SOURCES
       ${CMAKE_SOURCE_DIR}/tests/Unit/Console/UptimeTest.c

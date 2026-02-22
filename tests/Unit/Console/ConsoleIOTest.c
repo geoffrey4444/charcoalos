@@ -170,6 +170,16 @@ void test_console_print_hex_outputs_bytes_in_most_significant_first_order(void) 
   TEST_ASSERT_EQUAL_MEMORY(expected, g_tx_buffer, sizeof(expected) - 1);
 }
 
+void test_console_print_hex_bytes_outputs_input_order(void) {
+  const uint8_t bytes[] = {0x12, 0xAB, 0x00, 0xEF};
+  const char expected[] = "12AB00EF";
+
+  console_print_hex_bytes(bytes, sizeof(bytes));
+
+  TEST_ASSERT_EQUAL_size_t(sizeof(expected) - 1, g_tx_index);
+  TEST_ASSERT_EQUAL_MEMORY(expected, g_tx_buffer, sizeof(expected) - 1);
+}
+
 void test_console_uint64_from_hex_parses_prefixed_and_unprefixed_values(void) {
   TEST_ASSERT_EQUAL_HEX64(0x1A2B3C4D5E6F7890ULL,
                           console_uint64_from_hex("0x1A2B3C4D5E6F7890"));
@@ -204,6 +214,7 @@ int main(void) {
   RUN_TEST(test_console_read_line_echo_false_handles_backspace_without_output);
   RUN_TEST(test_console_read_line_echo_true_handles_backspace_and_echoes_edits);
   RUN_TEST(test_console_print_hex_outputs_bytes_in_most_significant_first_order);
+  RUN_TEST(test_console_print_hex_bytes_outputs_input_order);
   RUN_TEST(test_console_uint64_from_hex_parses_prefixed_and_unprefixed_values);
   RUN_TEST(test_console_uint64_from_hex_stops_at_first_non_hex_character);
   RUN_TEST(test_console_uint64_from_hex_limits_input_to_16_hex_digits);

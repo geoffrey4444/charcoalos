@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <string.h>
 
-static char g_tx_buffer[256];
+static char g_tx_buffer[1024];
 static size_t g_tx_index;
 static size_t g_halt_calls;
 static size_t g_shell_loop_calls;
@@ -55,12 +55,19 @@ void print_timer_diagnostics(void) { ++g_print_timer_diagnostics_calls; }
 
 void platform_reboot(void) { ++g_platform_reboot_calls; }
 
+static struct MemoryRegion g_mock_memory_regions[16];
+static size_t g_mock_memory_region_count;
+
 void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
   (void)dtb;
   if (out_hw_info == NULL) {
     return;
   }
   out_hw_info->header.magic = g_valid_dtb_magic;
+  out_hw_info->physical_memory_region_count = g_mock_memory_region_count;
+  for (size_t i = 0; i < g_mock_memory_region_count; ++i) {
+    out_hw_info->physical_memory_regions[i] = g_mock_memory_regions[i];
+  }
   console_print("Device table blob recognized with magic EDFE0DD0\n");
 }
 
@@ -75,6 +82,8 @@ void setUp(void) {
   g_custom_foreground_calls = 0;
   g_initialize_timer_calls = 0;
   g_print_timer_diagnostics_calls = 0;
+  g_mock_memory_region_count = 0;
+  memset(g_mock_memory_regions, 0, sizeof(g_mock_memory_regions));
   kernel_set_foreground_client(NULL);
 }
 
@@ -83,18 +92,34 @@ void tearDown(void) {}
 void test_kernel_init_prints_welcome_message(void) {
   kernel_init((uintptr_t)&g_valid_dtb_magic);
 
-  TEST_ASSERT_EQUAL_STRING_LEN(
+  TEST_ASSERT_EQUAL_STRING(
       "Initializing timer... done.\n"
       "Parsing device tree blob for hardware information...\n"
       "Device table blob recognized with magic EDFE0DD0\n"
+      "\n"
       "Welcome to CharcoalOS.\n",
-      g_tx_buffer,
-      strlen("Initializing timer... done.\n"
-             "Parsing device tree blob for hardware information...\n"
-             "Device table blob recognized with magic EDFE0DD0\n"
-             "Welcome to CharcoalOS.\n"));
+      g_tx_buffer);
   TEST_ASSERT_EQUAL_size_t(1, g_initialize_timer_calls);
   TEST_ASSERT_EQUAL_size_t(1, g_print_timer_diagnostics_calls);
+}
+
+void test_kernel_init_prints_physical_memory_regions_from_dtb(void) {
+  g_mock_memory_region_count = 2;
+  g_mock_memory_regions[0].base_address = (uintptr_t)0x40000000ULL;
+  g_mock_memory_regions[0].size = (size_t)0x1000000ULL;
+  g_mock_memory_regions[1].base_address = (uintptr_t)0x41000000ULL;
+  g_mock_memory_regions[1].size = (size_t)0x2000000ULL;
+
+  kernel_init((uintptr_t)&g_valid_dtb_magic);
+
+  const char *first = strstr(g_tx_buffer,
+                             "Physical memory region at base address 0x");
+  TEST_ASSERT_NOT_NULL(first);
+  const char *second =
+      strstr(first + 1, "Physical memory region at base address 0x");
+  TEST_ASSERT_NOT_NULL(second);
+  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, " with size 0x"));
+  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, " bytes\n"));
 }
 
 void test_kernel_run_calls_default_shell_client_after_init(void) {
@@ -150,6 +175,7 @@ void test_kernel_restart_calls_platform_reboot(void) {
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_kernel_init_prints_welcome_message);
+  RUN_TEST(test_kernel_init_prints_physical_memory_regions_from_dtb);
   RUN_TEST(test_kernel_run_calls_default_shell_client_after_init);
   RUN_TEST(test_kernel_run_halts_when_foreground_client_is_unset);
   RUN_TEST(test_kernel_run_calls_custom_foreground_client_when_configured);
