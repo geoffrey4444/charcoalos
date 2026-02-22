@@ -8,6 +8,7 @@
 #include "unity.h"
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 static char g_tx_buffer[1024];
@@ -110,16 +111,27 @@ void test_kernel_init_prints_physical_memory_regions_from_dtb(void) {
   g_mock_memory_regions[1].base_address = (uintptr_t)0x41000000ULL;
   g_mock_memory_regions[1].size = (size_t)0x2000000ULL;
 
+  char expected_line_0[128] = {0};
+  char expected_line_1[128] = {0};
+  const int pointer_hex_width = (int)(sizeof(uintptr_t) * 2);
+  const int size_hex_width = (int)(sizeof(size_t) * 2);
+  snprintf(expected_line_0, sizeof(expected_line_0),
+           "Physical memory region at base address 0x%0*llX with size "
+           "0x%0*llX bytes\n",
+           pointer_hex_width,
+           (unsigned long long)g_mock_memory_regions[0].base_address,
+           size_hex_width, (unsigned long long)g_mock_memory_regions[0].size);
+  snprintf(expected_line_1, sizeof(expected_line_1),
+           "Physical memory region at base address 0x%0*llX with size "
+           "0x%0*llX bytes\n",
+           pointer_hex_width,
+           (unsigned long long)g_mock_memory_regions[1].base_address,
+           size_hex_width, (unsigned long long)g_mock_memory_regions[1].size);
+
   kernel_init((uintptr_t)&g_valid_dtb_magic);
 
-  const char *first = strstr(g_tx_buffer,
-                             "Physical memory region at base address 0x");
-  TEST_ASSERT_NOT_NULL(first);
-  const char *second =
-      strstr(first + 1, "Physical memory region at base address 0x");
-  TEST_ASSERT_NOT_NULL(second);
-  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, " with size 0x"));
-  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, " bytes\n"));
+  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, expected_line_0));
+  TEST_ASSERT_NOT_NULL(strstr(g_tx_buffer, expected_line_1));
 }
 
 void test_kernel_run_calls_default_shell_client_after_init(void) {

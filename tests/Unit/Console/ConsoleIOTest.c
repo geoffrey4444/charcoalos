@@ -51,6 +51,29 @@ void test_string_length_returns_expected_length(void) {
   TEST_ASSERT_EQUAL_size_t(5, string_length("hello"));
 }
 
+void test_string_compare_with_length_exact_match_with_null_check(void) {
+  TEST_ASSERT_TRUE(string_compare_with_length("memory", "memory", 6, true));
+  TEST_ASSERT_TRUE(string_compare_with_length("", "", 0, true));
+}
+
+void test_string_compare_with_length_rejects_mismatch_and_extra_chars(void) {
+  TEST_ASSERT_FALSE(string_compare_with_length("memory", "memori", 6, true));
+  TEST_ASSERT_FALSE(string_compare_with_length("memoryX", "memory", 6, true));
+  TEST_ASSERT_FALSE(string_compare_with_length("memory", "memoryX", 6, true));
+}
+
+void test_string_compare_with_length_can_compare_prefix_without_null_check(void) {
+  const char non_null_terminated_text[] = {'m', 'e', 'm', 'o', 'r', 'y', 'X'};
+  const char non_null_terminated_other[] = {'m', 'e', 'm', 'o', 'r', 'y', 'Y'};
+
+  TEST_ASSERT_TRUE(string_compare_with_length(non_null_terminated_text,
+                                              non_null_terminated_other, 6,
+                                              false));
+  TEST_ASSERT_FALSE(string_compare_with_length(non_null_terminated_text,
+                                               non_null_terminated_other, 7,
+                                               false));
+}
+
 void test_console_putc_writes_one_character(void) {
   console_putc('K');
   TEST_ASSERT_EQUAL_size_t(1, g_tx_index);
@@ -203,6 +226,10 @@ void test_console_uint64_from_hex_limits_input_to_16_hex_digits(void) {
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_string_length_returns_expected_length);
+  RUN_TEST(test_string_compare_with_length_exact_match_with_null_check);
+  RUN_TEST(test_string_compare_with_length_rejects_mismatch_and_extra_chars);
+  RUN_TEST(
+      test_string_compare_with_length_can_compare_prefix_without_null_check);
   RUN_TEST(test_console_putc_writes_one_character);
   RUN_TEST(test_console_write_respects_size_and_translates_newline);
   RUN_TEST(test_console_getc_returns_platform_character);

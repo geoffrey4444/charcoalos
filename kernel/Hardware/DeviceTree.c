@@ -301,8 +301,9 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
         // will decode the info in the dtb about available physical memory.
         // NOTE: this assumes memory is a child of the root dtb node, as is
         // the case for qemu-virt arm64 and rpi arm64.
-        if (string_compare(node_name, "")) {
-          if (string_compare(prop_name, "#address-cells")) {
+        if (string_compare_with_length(node_name, "", 0, true)) {
+          if (string_compare_with_length(prop_name, "#address-cells", 14,
+                                         true)) {
             // First, confirm that the value is a 32-bit integer
             if (prop_length != 4) {
               kernel_panic("Malformed DTB: #address-cells value is not 32-bit");
@@ -311,7 +312,8 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
             address_cells_initialized = true;
             out_hw_info->address_cells =
                 read_be32_from_address((uintptr_t)current_data_bytes);
-          } else if (string_compare(prop_name, "#size-cells")) {
+          } else if (string_compare_with_length(prop_name, "#size-cells", 11,
+                                                true)) {
             if (prop_length != 4) {
               kernel_panic("Malformed DTB: #size-cells value is not 32-bit");
               return;
@@ -325,16 +327,19 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
         // Check if current property is a property that the node specifying
         // physical RAM has: device_type (should have value "memory") or
         // reg (has one or more regions, depending on property size)
-        if (string_compare(prop_name, "device_type")) {
-          if (string_compare((char *)current_data_bytes, "memory")) {
+        if (string_compare_with_length(prop_name, "device_type", 11, true)) {
+          if (prop_length == 7 &&
+              string_compare_with_length((char *)current_data_bytes, "memory",
+                                         6, true)) {
             current_node_device_type = "memory";
           }
-        } else if (string_compare(prop_name, "reg")) {
+        } else if (string_compare_with_length(prop_name, "reg", 3, true)) {
           current_node_reg = current_data_bytes;
           current_node_reg_size = prop_length;
         }
         if (current_node_reg) {
-          if (string_compare(current_node_device_type, "memory")) {
+          if (string_compare_with_length(current_node_device_type, "memory", 6,
+                                         true)) {
             // Current node specifie physical memory: device_type == "memory"
             // and reg is a property of the current node
             if (address_cells_initialized && size_cells_initialized) {
@@ -375,6 +380,7 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
   if (end_tokens_encountered != 1u) {
     kernel_panic(
         "Malformed DTB: DTB did not include exactly one FDT_END token");
+    return;
   }
 
   // Print hardware info to console

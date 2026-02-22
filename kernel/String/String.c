@@ -20,6 +20,22 @@ bool string_compare(const char *text, const char *other) {
   return true;
 }
 
+bool string_compare_with_length(const char *text, const char *other,
+                                size_t expected_length,
+                                bool check_null_termination) {
+  if (check_null_termination) {
+    if ((text[expected_length] != '\0') || (other[expected_length] != '\0')) {
+      return false;
+    }
+  }
+  for (size_t i = 0; i < expected_length; ++i) {
+    if (text[i] != other[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 size_t string_length(const char *string) {
   size_t i = 0;
   while (string[i] != '\0') {

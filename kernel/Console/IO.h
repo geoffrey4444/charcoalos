@@ -64,8 +64,7 @@ void console_print_hex_value(const void *data, size_t size);
 
 /*!
  * \brief Prints a series of bytes as a hex string
- * \details Bytes are printed in reverse memory order (i.e. most significant
- * byte first) with no prefix).
+ * \details Bytes are printed in input byte order with no prefix.
  * \param data The bytes to print as hex
  * \param size The size of the data to print in bytes
  */
