@@ -2,6 +2,7 @@
 // See LICENSE.txt for details.
 
 #include "kernel/Console/IO.h"
+#include "kernel/Hardware/DeviceTree.h"
 #include "kernel/Hardware/Endian.h"
 #include "kernel/Memory/Memory.h"
 #include "kernel/Panic/Panic.h"
@@ -9,11 +10,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
-void physical_memory_regions(struct MemoryRegion* out_memory_regions,
-                             size_t* out_memory_region_count,
-                             const uint32_t address_cells,
-                             const uint32_t size_cells, const void* reg_bytes,
-                             const size_t reg_size) {
+void get_memory_regions(struct MemoryRegion* out_memory_regions,
+                        size_t* out_memory_region_count,
+                        const uint32_t address_cells, const uint32_t size_cells,
+                        const void* reg_bytes, const size_t reg_size) {
   // Sanity checks on sizes
   if ((address_cells > reg_size) || (size_cells > reg_size)) {
     kernel_panic(
@@ -44,21 +44,20 @@ void physical_memory_regions(struct MemoryRegion* out_memory_regions,
   // Make sure reg_size is an integer multiple of size_of_one_region_spec
   if (reg_size % size_of_one_region_spec) {
     console_print("reg_size: 0x");
-    console_print_hex_value((void *)&reg_size, 8);
+    console_print_hex_value((void*)&reg_size, 8);
     console_print("\nsize_of_one_region_spec: 0x");
-    console_print_hex_value((void *)&size_of_one_region_spec, 8);
+    console_print_hex_value((void*)&size_of_one_region_spec, 8);
     console_print("\n");
     kernel_panic(
-        "Unable to determine physical memory: reg size is not an integer "
+        "Unable to determine memory: reg size is not an integer "
         "multiple of region sizes");
     return;
   }
-  if (number_of_regions_specified > 16) {
-    kernel_panic("Only up to 16 regions of physical memory supported");
+  if ((*out_memory_region_count + number_of_regions_specified) >
+      MAX_MEMORY_REGIONS) {
+    kernel_panic("Max number of memory regions exceeded");
     return;
   }
-  // Safe to cast: 16 way less than SIZE_MAX
-  *out_memory_region_count = (size_t)number_of_regions_specified;
 
   // Start decoding reg bytes
   uint64_t base;
@@ -87,14 +86,14 @@ void physical_memory_regions(struct MemoryRegion* out_memory_regions,
 
     // Do not accept zero size for a region; that makes no sense
     if (size == 0) {
-      kernel_panic("Physical memory region reported with zero size");
+      kernel_panic("Memory region reported with zero size");
       return;
     }
     // Do not accept if base + size > UINT64_MAX
     // But write as UINT64_MAX - size < base to avoid overflow
     if (UINT64_MAX - size < base) {
       kernel_panic(
-          "Physical memory region reported with addresses that overflow 64-bit "
+          "Memory region reported with addresses that overflow 64-bit "
           "address space");
       return;
     }
@@ -107,7 +106,9 @@ void physical_memory_regions(struct MemoryRegion* out_memory_regions,
       kernel_panic("Memory region size cannot be cast to size_t");
       return;
     }
-    out_memory_regions[i].base_address = (uintptr_t)(base);
-    out_memory_regions[i].size = (size_t)(size);
+    out_memory_regions[*out_memory_region_count + i].base_address =
+        (uintptr_t)(base);
+    out_memory_regions[*out_memory_region_count + i].size = (size_t)(size);
   }
+  *out_memory_region_count += (size_t)number_of_regions_specified;
 }

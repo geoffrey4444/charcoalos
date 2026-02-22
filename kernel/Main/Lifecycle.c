@@ -40,6 +40,16 @@ void kernel_init(uintptr_t dtb) {
                             sizeof(size_t));
     console_print(" bytes\n");
   }
+  for (size_t i = 0; i < hw_info.reserved_memory_regions_count; ++i) {
+    console_print("Reserved memory region at base address 0x");
+    console_print_hex_value(
+        (void *)&(hw_info.reserved_memory_regions[i].base_address),
+        sizeof(uintptr_t));
+    console_print(" with size 0x");
+    console_print_hex_value((void *)&(hw_info.reserved_memory_regions[i].size),
+                            sizeof(size_t));
+    console_print(" bytes\n");
+  }
 
   console_print("\nWelcome to CharcoalOS.\n");
 

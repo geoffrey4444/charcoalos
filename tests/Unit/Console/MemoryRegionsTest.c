@@ -39,7 +39,7 @@ void test_physical_memory_regions_decodes_single_32bit_region(void) {
       0x08, 0x00, 0x00, 0x00,  // size 0x08000000
   };
 
-  physical_memory_regions(regions, &region_count, 1, 1, reg_bytes,
+  get_memory_regions(regions, &region_count, 1, 1, reg_bytes,
                           sizeof(reg_bytes));
 
   TEST_ASSERT_EQUAL_size_t(0, g_panic_calls);
@@ -59,7 +59,7 @@ void test_physical_memory_regions_decodes_two_64bit_regions(void) {
       0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,  // size 0x0000000010000000
   };
 
-  physical_memory_regions(regions, &region_count, 2, 2, reg_bytes,
+  get_memory_regions(regions, &region_count, 2, 2, reg_bytes,
                           sizeof(reg_bytes));
 
   TEST_ASSERT_EQUAL_size_t(0, g_panic_calls);
@@ -81,7 +81,7 @@ void test_physical_memory_regions_rejects_zero_sized_region(void) {
       0x00, 0x00, 0x00, 0x00,  // size 0
   };
 
-  physical_memory_regions(regions, &region_count, 1, 1, reg_bytes,
+  get_memory_regions(regions, &region_count, 1, 1, reg_bytes,
                           sizeof(reg_bytes));
 
   TEST_ASSERT_EQUAL_size_t(1, g_panic_calls);

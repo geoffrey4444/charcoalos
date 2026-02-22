@@ -108,7 +108,7 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
   // Parse reserved regions: pairs of 64-bit unsigned integers
   size_t i = 0;
   uint64_t start, end;
-  out_hw_info->reserved_regions_count = 0;
+  out_hw_info->reserved_memory_regions_count = 0;
   while (true) {
     if (i >= 255) {
       kernel_panic("Insufficient space to store reserved memory regions");
@@ -125,35 +125,40 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
     if (end >= dtb + out_hw_info->header.total_size) {
       break;
     }
-    out_hw_info->reserved_region_base_addresses[i] =
+    out_hw_info->reserved_memory_regions[i].base_address =
         read_be64_from_address(start);
-    out_hw_info->reserved_region_sizes[i] = read_be64_from_address(end);
-    if ((out_hw_info->reserved_region_base_addresses[i] == 0) &&
-        (out_hw_info->reserved_region_sizes[i] == 0)) {
+    out_hw_info->reserved_memory_regions[i].size = read_be64_from_address(end);
+    if ((out_hw_info->reserved_memory_regions[i].base_address == 0) &&
+        (out_hw_info->reserved_memory_regions[i].size == 0)) {
       // End of table of reserved regions reached
       break;
     } else {
-      ++(out_hw_info->reserved_regions_count);
+      ++(out_hw_info->reserved_memory_regions_count);
       console_print("Reserved memory region at base address 0x");
       console_print_hex_value(
-          (void *)&(out_hw_info->reserved_region_base_addresses[i]), 8);
+          (void *)&(out_hw_info->reserved_memory_regions[i].base_address), 8);
       console_print(" of size 0x");
-      console_print_hex_value((void *)&(out_hw_info->reserved_region_sizes[i]),
-                              8);
+      console_print_hex_value(
+          (void *)&(out_hw_info->reserved_memory_regions[i].size), 8);
       console_print("\n");
     }
     ++i;
   }
   console_print("Read 0x");
-  console_print_hex_value((void *)&(out_hw_info->reserved_regions_count), 8);
-  console_print(" reserved memory regions.\n");
+  console_print_hex_value((void *)&(out_hw_info->reserved_memory_regions_count),
+                          8);
+  console_print(" reserved memory regions from DTB header.\n");
 
   // Walk the table
-  bool address_cells_initialized = false;
-  bool size_cells_initialized = false;
   void *current_node_reg = NULL;
   uint32_t current_node_reg_size = 0;
   char *current_node_device_type = NULL;
+
+  // Keep track of depth and contextwhile traversing the DTB
+  struct DTBContext context[DTB_MAX_DEPTH];
+  context[0].address_cells = 0;
+  context[0].size_cells = 0;
+  context[0].in_reserved_memory_subtree = false;
 
   char *node_name = "";
   size_t node_name_length = 0;
@@ -191,7 +196,17 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
     // Handle the token
     switch (token) {
       case FDT_BEGIN_NODE:
+        if (node_depth + 1 >= DTB_MAX_DEPTH) {
+          kernel_panic("Cannot parse DTB: node maximum depth exceeded");
+          return;
+        }
+        context[node_depth + 1].address_cells =
+            context[node_depth].address_cells;
+        context[node_depth + 1].size_cells = context[node_depth].size_cells;
+        context[node_depth + 1].in_reserved_memory_subtree =
+            context[node_depth].in_reserved_memory_subtree;
         ++node_depth;
+
         // Get node name
         node_name = (char *)(dtb_cursor);
         // Advance cursor beyond node name string's null terminator, guarding
@@ -224,6 +239,14 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
           return;
         }
 
+        // Is the current node starting a reserved-memory subtree?
+        if (node_name_length == 15) {
+          if (string_compare_with_length(node_name, "reserved-memory", 15,
+                                         true)) {
+            context[node_depth].in_reserved_memory_subtree = true;
+          }
+        }
+
         // Set current_node_device_type and current_node_reg to NULL; these
         // have not yet been read for this new element
         current_node_device_type = NULL;
@@ -240,6 +263,10 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
           kernel_panic(
               "Malformed DTB: end node token without matching begin node "
               "token");
+          return;
+        }
+        if (node_depth == 0) {
+          kernel_panic("DTB node depth overflow");
           return;
         }
         --node_depth;
@@ -301,27 +328,22 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
         // will decode the info in the dtb about available physical memory.
         // NOTE: this assumes memory is a child of the root dtb node, as is
         // the case for qemu-virt arm64 and rpi arm64.
-        if (string_compare_with_length(node_name, "", 0, true)) {
-          if (string_compare_with_length(prop_name, "#address-cells", 14,
-                                         true)) {
-            // First, confirm that the value is a 32-bit integer
-            if (prop_length != 4) {
-              kernel_panic("Malformed DTB: #address-cells value is not 32-bit");
-              return;
-            }
-            address_cells_initialized = true;
-            out_hw_info->address_cells =
-                read_be32_from_address((uintptr_t)current_data_bytes);
-          } else if (string_compare_with_length(prop_name, "#size-cells", 11,
-                                                true)) {
-            if (prop_length != 4) {
-              kernel_panic("Malformed DTB: #size-cells value is not 32-bit");
-              return;
-            }
-            size_cells_initialized = true;
-            out_hw_info->size_cells =
-                read_be32_from_address((uintptr_t)current_data_bytes);
+        if (string_compare_with_length(prop_name, "#address-cells", 14, true)) {
+          // First, confirm that the value is a 32-bit integer
+          if (prop_length != 4) {
+            kernel_panic("Malformed DTB: #address-cells value is not 32-bit");
+            return;
           }
+          context[node_depth].address_cells =
+              read_be32_from_address((uintptr_t)current_data_bytes);
+        } else if (string_compare_with_length(prop_name, "#size-cells", 11,
+                                              true)) {
+          if (prop_length != 4) {
+            kernel_panic("Malformed DTB: #size-cells value is not 32-bit");
+            return;
+          }
+          context[node_depth].size_cells =
+              read_be32_from_address((uintptr_t)current_data_bytes);
         }
 
         // Check if current property is a property that the node specifying
@@ -340,18 +362,63 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
         if (current_node_reg) {
           if (string_compare_with_length(current_node_device_type, "memory", 6,
                                          true)) {
-            // Current node specifie physical memory: device_type == "memory"
+            // Current node specifies physical memory: device_type == "memory"
             // and reg is a property of the current node
-            if (address_cells_initialized && size_cells_initialized) {
-              physical_memory_regions(
+            // Use address and cells of parent node, not current node, unless
+            // node is the root node (should not happen). In that case, try to
+            // find #address-cells and #size-cells in the root node, but they
+            // most likely will be undefined.
+            if (context[node_depth > 0 ? node_depth - 1 : node_depth]
+                        .address_cells > 0 &&
+                context[node_depth > 0 ? node_depth - 1 : node_depth]
+                        .size_cells > 0) {
+              get_memory_regions(
                   out_hw_info->physical_memory_regions,
                   &(out_hw_info->physical_memory_region_count),
-                  out_hw_info->address_cells, out_hw_info->size_cells,
+                  context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .address_cells,
+                  context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .size_cells,
                   current_node_reg, current_node_reg_size);
+              out_hw_info->address_cells =
+                  context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .address_cells;
+              out_hw_info->size_cells =
+                  context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .size_cells;
+              // Reset node state after reading the regions from this node, to
+              // avoid duplicate region adds
+              current_node_reg = NULL;
+              current_node_reg_size = 0;
+              current_node_device_type = NULL;
             } else {
               kernel_panic(
                   "Malformed DTB: must initialize both address cells and size "
                   "cells before reading memory reg");
+              return;
+            }
+          } else if (context[node_depth].in_reserved_memory_subtree) {
+            if (context[node_depth > 0 ? node_depth - 1 : node_depth]
+                        .address_cells > 0 &&
+                context[node_depth > 0 ? node_depth - 1 : node_depth]
+                        .size_cells > 0) {
+              get_memory_regions(
+                  out_hw_info->reserved_memory_regions,
+                  &(out_hw_info->reserved_memory_regions_count),
+                  context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .address_cells,
+                  context[node_depth > 0 ? node_depth - 1 : node_depth]
+                      .size_cells,
+                  current_node_reg, current_node_reg_size);
+              // Reset node state after reading the regions from this node, to
+              // avoid duplicate region adds
+              current_node_reg = NULL;
+              current_node_reg_size = 0;
+              current_node_device_type = NULL;
+            } else {
+              kernel_panic(
+                  "Malformed DTB: must initialize address cells and size cells "
+                  "before reading reserved memory regions");
               return;
             }
           }

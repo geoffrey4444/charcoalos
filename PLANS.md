@@ -134,38 +134,34 @@ Decision:
 - This separation avoids circular bring-up problems and makes debugging much easier.
 
 3.1. RAM discovery strategy (runtime first, hard-coded fallback)
-1. Capture the boot DTB (device tree blob) pointer from boot assembly and pass/store it for C init.
-2. Parse RAM from DTB `memory` node `reg` entries on both `virt` and `rpi`.
+1. ✅ Capture the boot DTB (device tree blob) pointer from boot assembly and pass/store it for C init.
+2. ✅ Parse RAM from DTB `memory` node `reg` entries on both `virt` and `rpi`.
 3. Also parse reserved regions (`/memreserve/` and `reserved-memory`) so allocator never hands those out.
-4. If DTB parsing fails, use a conservative fallback RAM region per platform only to boot; keep fallback documented as temporary.
+4. ✅ If DTB parsing fails, just panic.
 5. Normalize all discovered RAM ranges:
    - align start up to 4 KiB page size,
    - align end down to 4 KiB,
    - discard empty ranges.
 
-3.1.a. Minimal DTB parsing scope (implementation plan)
-1. Parse only what is needed immediately for Phase 3/4 and later SMP bring-up:
-   - `/memory` node `reg` entries,
+3.1.a. ✅ Minimal DTB parsing scope (implementation plan)
+1. Parse only what is needed immediately for Phase 3/4:
+   - ✅ `/memory` node `reg` entries,
    - `/reserved-memory` child `reg` entries,
-   - `/cpus` child cpu nodes (`device_type=cpu`, `reg`, `status`, optional `enable-method`),
-   - `/psci` node `method` (`smc`/`hvc`).
 2. Keep parser architecture intentionally simple:
-   - single linear token walk through DTB struct block,
-   - no dynamic allocation and no full in-memory DT object tree,
-   - small node-context stack only for current path and inherited `#address-cells`/`#size-cells`.
+   - ✅ single linear token walk through DTB struct block,
+   - ✅ no dynamic allocation and no full in-memory DT object tree,
+   - ✅ small node-context stack only for current path and inherited `#address-cells`/`#size-cells`.
 3. Store only essential parsed state in `hardware_info`:
-   - RAM ranges and count,
-   - reserved ranges and count (merged from `/memreserve/` + `/reserved-memory`),
-   - CPU IDs/count and boot CPU ID,
-   - PSCI method enum/flag.
+   - ✅ RAM ranges and count,
+   - ✅ reserved ranges and count (merged from `/memreserve/` + `/reserved-memory`),
 4. Logging behavior:
-   - by default, print only harvested entries and counts (RAM/reserved/CPU/PSCI),
-   - optional verbose mode may print every node/property encountered for debugging.
+   - ✅ by default, print only harvested entries and counts (RAM/reserved/CPU/PSCI),
+   - ✅ optional verbose mode may print every node/property encountered for debugging.
 5. Guardrails to avoid near-term rewrites:
-   - decode `reg` using parent `#address-cells`/`#size-cells` (no hardcoded 64-bit assumption),
-   - treat overflow/truncation as explicit diagnostic state (never silent),
-   - respect CPU `status` so disabled CPUs are not counted online-ready.
-6. Defer to later phases:
+   - ✅ decode `reg` using parent `#address-cells`/`#size-cells` (no hardcoded 64-bit assumption),
+   - ✅ treat overflow/truncation as explicit diagnostic state (never silent),
+6. ✅ Defer to later phases:
+   - parsing for CPU bring-up
    - full MMIO topology parsing (`ranges`, bus translation),
    - full interrupt topology parsing (beyond existing platform-specific setup),
    - general-purpose DT framework features not needed by current milestones.

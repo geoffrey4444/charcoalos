@@ -7,6 +7,13 @@
 #include <stddef.h>
 
 /*!
+ * \brief Max number of regions that can hold physical memory or reserved memory.
+ * \details This sets the size of the arrays used to store physical and reserved
+ * memory regions in HardwareInfo.
+ */
+#define MAX_MEMORY_REGIONS 64
+
+/*!
  * \brief A struct that holes a memory region, with a base address and size.
  */
 struct MemoryRegion {
@@ -25,7 +32,7 @@ struct MemoryRegion {
  * reg data from the DTB.
  * \param reg_bytes The raw bytes
  */
-void physical_memory_regions(struct MemoryRegion* out_memory_regions,
+void get_memory_regions(struct MemoryRegion* out_memory_regions,
                              size_t* out_memory_region_count,
                              const uint32_t address_cells,
                              const uint32_t size_cells, const void* reg_bytes,

@@ -3,9 +3,21 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "kernel/Memory/Memory.h"
+
+#define DTB_MAX_DEPTH 64
+
+/*!
+ * \brief Struct to hold context when parsing the device tree blob (DTB).
+ */
+struct DTBContext {
+  uint32_t address_cells;
+  uint32_t size_cells;
+  bool in_reserved_memory_subtree;
+};
 
 /*!
  * \brief The device tree blob header.
@@ -36,12 +48,12 @@ struct HardwareInfo {
   uint32_t address_cells;
   uint32_t size_cells;
 
-  struct MemoryRegion physical_memory_regions[16];
+  struct MemoryRegion physical_memory_regions[MAX_MEMORY_REGIONS];
   size_t physical_memory_region_count;
 
-  uint64_t reserved_region_base_addresses[255];
-  uint64_t reserved_region_sizes[255];
-  uint64_t reserved_regions_count;
+  struct MemoryRegion reserved_memory_regions[MAX_MEMORY_REGIONS];
+  size_t reserved_memory_regions_count;
+
 };
 
 /*!
