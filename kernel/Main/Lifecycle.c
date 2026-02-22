@@ -27,10 +27,21 @@ void kernel_init(uintptr_t dtb) {
   console_print("done.\n");
 
   console_print("Parsing device tree blob for hardware information...\n");
-  static struct hardware_info hw_info = {0};
+  static struct HardwareInfo hw_info = {0};
   parse_device_tree_blob(&hw_info, dtb);
 
-  console_print("Welcome to CharcoalOS.\n");
+  for (size_t i = 0; i < hw_info.physical_memory_region_count; ++i) {
+    console_print("Physical memory region at base address 0x");
+    console_print_hex_value(
+        (void *)&(hw_info.physical_memory_regions[i].base_address),
+        sizeof(uintptr_t));
+    console_print(" with size 0x");
+    console_print_hex_value((void *)&(hw_info.physical_memory_regions[i].size),
+                            sizeof(size_t));
+    console_print(" bytes\n");
+  }
+
+  console_print("\nWelcome to CharcoalOS.\n");
 
   if (g_foreground_client == NULL) {
     kernel_set_foreground_client(run_default_foreground_client);

@@ -5,13 +5,15 @@
 
 #include <stdint.h>
 
+#include "kernel/Memory/Memory.h"
+
 /*!
  * \brief The device tree blob header.
  * \details The header contains information on how to parse the dtb; it is
- * provided as a series of big-endian 32-bit integers at the start of the 
+ * provided as a series of big-endian 32-bit integers at the start of the
  * dtb.
  */
-struct dtb_header {
+struct DTBHeader {
   uint32_t magic;
   uint32_t total_size;
   uint32_t off_dt_struct;
@@ -29,8 +31,14 @@ struct dtb_header {
  * \details This struct contains information parsed from
  * the device tree blob (dtb), such as available memory regions.
  */
-struct hardware_info {
-  struct dtb_header header;
+struct HardwareInfo {
+  struct DTBHeader header;
+  uint32_t address_cells;
+  uint32_t size_cells;
+
+  struct MemoryRegion physical_memory_regions[16];
+  size_t physical_memory_region_count;
+
   uint64_t reserved_region_base_addresses[255];
   uint64_t reserved_region_sizes[255];
   uint64_t reserved_regions_count;
@@ -42,4 +50,4 @@ struct hardware_info {
  * \param out_hw_info Destination for parsed hardware information.
  * \param dtb The device tree blob pointer.
  */
-void parse_device_tree_blob(struct hardware_info *out_hw_info, uintptr_t dtb);
+void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb);

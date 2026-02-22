@@ -15,6 +15,7 @@ function(add_kernel_common_target target_name)
     ${kernel_dir}/Hardware/DeviceTree.c
     ${kernel_dir}/Main/Lifecycle.c
     ${kernel_dir}/Main/Main.c
+    ${kernel_dir}/Memory/Memory.c
     ${kernel_dir}/Panic/Panic.c
     ${kernel_dir}/Panic/Restart.c
     ${kernel_dir}/String/String.c
