@@ -40,7 +40,7 @@ void get_memory_regions(struct MemoryRegion* out_memory_regions,
                         const void* reg_bytes, const size_t reg_size);
 
 /*!
- * \brief Normalizes the memory regions.
+ * \brief Normalizes a list of memory regions.
  * \details This function does the following to an array of memory regions:
  * - Sorts the regions by base address
  * - Merges overlapping regions into a single region
@@ -59,3 +59,40 @@ void get_memory_regions(struct MemoryRegion* out_memory_regions,
 void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
                               size_t* out_memory_region_count,
                               const bool expand_to_page_size);
+
+/*!
+ * \brief Removes the reserved memory regions from the provided physical
+ * memory regions, modifying the physical memory regions in place.
+ * \details This function does the following to the physical memory regions:
+ * - Normalize (contracting) the physical regions
+ * - Normalize (expanding) the reserved regions
+ * - For each physical region, loop over each reserved region
+ *   - If reserved region does not overlap the physical region, do nothing
+ *   - If reserved region completely covers the physical region, drop the
+ *     physical region
+ *   - If the reserved region overlaps the start of the physical region but
+ *     not the end, move the start of the physical region to the end of the
+ *     reserved region by updating the physical region base address and size
+ *   - If the reserved region overlaps the end of the physical region but not
+ *     the start, move the end of the physical region to the start of the
+ *     reserved region updating the physical region size
+ *   - If the reserved region is within the physical region without touching
+ *     either end, split the physical region into two regions, one before and
+ *     one after the reserved region, by updating the size of the original
+ *     region, shifting the regions after that right 1 to make room for a new
+ *     region, and inserting a new region with base address at the end of the
+ *     reserved region and size to reach the end of the original physical
+ *     region
+ * - Normalize (contracting) the physical regions one more time
+ */
+void remove_reserved_memory_regions(
+    struct MemoryRegion* physical_memory_regions,
+    size_t* physical_memory_region_count,
+    struct MemoryRegion* reserved_memory_regions,
+    size_t* reserved_memory_region_count);
+
+/*!
+ * \brief Returns the total size in bytes of the provided memory regions
+ */
+size_t get_total_memory_size(const struct MemoryRegion* memory_regions,
+                             const size_t memory_region_count);

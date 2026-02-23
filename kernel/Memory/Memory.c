@@ -216,3 +216,86 @@ void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
     }
   }
 }
+
+void remove_reserved_memory_regions(
+    struct MemoryRegion* physical_memory_regions,
+    size_t* physical_memory_region_count,
+    struct MemoryRegion* reserved_memory_regions,
+    size_t* reserved_memory_region_count) {
+  normalize_memory_regions(physical_memory_regions,
+                           physical_memory_region_count, false);
+  normalize_memory_regions(reserved_memory_regions,
+                           reserved_memory_region_count, true);
+
+  for (size_t i = 0; i < *physical_memory_region_count; ++i) {
+    uintptr_t phys_start = physical_memory_regions[i].base_address;
+    uintptr_t phys_end = phys_start + physical_memory_regions[i].size;
+
+    for (size_t j = 0; j < *reserved_memory_region_count; ++j) {
+      uintptr_t res_start = reserved_memory_regions[j].base_address;
+      uintptr_t res_end = res_start + reserved_memory_regions[j].size;
+      if (phys_start >= res_start && phys_start < res_end &&
+          phys_end <= res_end && phys_end > res_start) {
+        // Reserved region completely encloses physical region,
+        // so drop the physical region by setting its size to 0;
+        // it will be removed when normalizing
+        physical_memory_regions[i].size = 0;
+        // No need to continue checking against reserved regions; this
+        // physical region has been eliminated
+        continue;
+      } else if (phys_start >= res_start && phys_start < res_end) {
+        // phys_end > res_end to get here
+        // Trim start: phys_start -> res_end
+        physical_memory_regions[i].base_address = res_end;
+        physical_memory_regions[i].size = phys_end - res_end;
+      } else if (phys_end <= res_end && phys_end > res_start) {
+        // res_start > phys_start to get here
+        // Trim end: phys_end -> res_start
+        physical_memory_regions[i].size = res_start - phys_start;
+      } else if (phys_start < res_start && phys_end > res_end) {
+        // Split
+        if (*physical_memory_region_count + 1 >= MAX_MEMORY_REGIONS) {
+          kernel_panic(
+              "Cannot split memory region to account for reserved region: all "
+              "memory regions already used");
+          return;
+        }
+        // Shift existing physical regions right 1
+        for (size_t k = *physical_memory_region_count - 1; k > i; --k) {
+          physical_memory_regions[k + 1] = physical_memory_regions[k];
+        }
+        ++(*physical_memory_region_count);
+        // First region: adjust end
+        physical_memory_regions[i].size = res_start - phys_start;
+        // Second region: adjust start
+        physical_memory_regions[i + 1].base_address = res_end;
+        physical_memory_regions[i + 1].size = phys_end - res_end;
+      }
+    }
+  }
+
+  normalize_memory_regions(physical_memory_regions,
+                           physical_memory_region_count, false);
+}
+
+size_t get_total_memory_size(const struct MemoryRegion* memory_regions,
+                             const size_t memory_region_count) {
+  if (memory_region_count == 0) {
+    return 0;
+  }
+  if (memory_regions == NULL) {
+    kernel_panic("Null pointer passed to get_total_memory_size");
+    return 0;
+  }
+
+  size_t total_memory = 0;
+  for (size_t i = 0; i < memory_region_count; ++i) {
+    if (memory_regions[i].size > SIZE_MAX - total_memory) {
+      kernel_panic("Overflow in adding memory sizes");
+      return 0;
+    } else {
+      total_memory += memory_regions[i].size;
+    }
+  }
+  return total_memory;
+}
