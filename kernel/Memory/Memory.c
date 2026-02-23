@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define PAGE_SIZE_BYTES 4096
+
 void get_memory_regions(struct MemoryRegion* out_memory_regions,
                         size_t* out_memory_region_count,
                         const uint32_t address_cells, const uint32_t size_cells,
@@ -111,4 +113,106 @@ void get_memory_regions(struct MemoryRegion* out_memory_regions,
     out_memory_regions[*out_memory_region_count + i].size = (size_t)(size);
   }
   *out_memory_region_count += (size_t)number_of_regions_specified;
+}
+
+void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
+                              size_t* out_memory_region_count,
+                              const bool expand_to_page_size) {
+  // If the array is empty, do nothing
+  if (out_memory_region_count == 0) {
+    return;
+  }
+
+  // If array pointer is NULL, panic
+  if (out_memory_regions == NULL) {
+    kernel_panic("Null pointer passed to normalize_memory_regions");
+    return;
+  }
+
+  // Loop over regions, removing any regions of zero size. If a region is
+  // removed, all regions at higher index are shifted left by one
+  // (i.e., their indices decrease by one), and out_memory_region_count
+  // decreases by one.
+  for (size_t i = 0; i < *out_memory_region_count; ++i) {
+    if (out_memory_regions[i].size == 0) {
+      // Shift remaining elements left 1
+      for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
+        out_memory_regions[j - 1] = out_memory_regions[j];
+      }
+      --(*out_memory_region_count);
+      // If no regions remain, return ... array contained only zero-size regions
+      if (*out_memory_region_count == 0) {
+        return;
+      }
+    }
+  }
+
+  // Reduce base address and increase size, or increase base address and reduce
+  // size, so that start and end == start + size
+  // are multiples of PAGE_SIZE_BYTES
+  for (size_t i = 0; i < *out_memory_region_count; ++i) {
+    const size_t start_mod_page_size =
+        out_memory_regions[i].base_address % PAGE_SIZE_BYTES;
+    const size_t end_mod_page_size =
+        (out_memory_regions[i].base_address + out_memory_regions[i].size) %
+        PAGE_SIZE_BYTES;
+    if (start_mod_page_size) {
+      if (expand_to_page_size) {
+        out_memory_regions[i].base_address -= start_mod_page_size;
+      } else {
+        out_memory_regions[i].base_address +=
+            (PAGE_SIZE_BYTES - start_mod_page_size);
+      }
+    }
+    if (end_mod_page_size) {
+      if (expand_to_page_size) {
+        out_memory_regions[i].size += (PAGE_SIZE_BYTES - end_mod_page_size);
+      } else {
+        out_memory_regions[i].size -= end_mod_page_size;
+      }
+    }
+  }
+
+  // Sort the regions in place using insertion sort (chosen because
+  // the number of regions tends to be small... this could be changed
+  // for a different sorting algorithm later if needed).
+  // I learned this particular sort algorithm from
+  // https://en.wikipedia.org/wiki/Insertion_sort
+  struct MemoryRegion swap;
+  swap.base_address = 0;
+  swap.size = 0;
+
+  for (size_t i = 1; i < *out_memory_region_count; ++i) {
+    for (size_t j = i; j > 0 && out_memory_regions[j - 1].base_address >
+                                    out_memory_regions[j].base_address;
+         --j) {
+      // Swap element j and element j - 1
+      swap = out_memory_regions[j - 1];
+      out_memory_regions[j - 1] = out_memory_regions[j];
+      out_memory_regions[j] = swap;
+    }
+  }
+
+  // Check if the sorted regions overlap. For each region except the last,
+  // check if base + size extends beyond next region's base address. If it does,
+  // extend the size to reach to the end of the next region, and remove the
+  // next region, left-shifting regions beyond that by one.
+  for (size_t i = 0; i < (*out_memory_region_count - 1); ++i) {
+    uintptr_t start_i = out_memory_regions[i].base_address;
+    uintptr_t end_i = start_i + out_memory_regions[i].size;
+    uintptr_t start_i_plus_1 = out_memory_regions[i + 1].base_address;
+    uintptr_t end_i_plus_1 = start_i_plus_1 + out_memory_regions[i + 1].size;
+    if (end_i >= start_i_plus_1) {
+      // Merge the regions: end is now max(end[i], end[i+1])
+      if (end_i_plus_1 > end_i) {
+        out_memory_regions[i].size = (size_t)(end_i_plus_1 - start_i);
+      }
+
+      // Shift other regions left and decrement region count
+      for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
+        out_memory_regions[j - 1] = out_memory_regions[j];
+      }
+      --(*out_memory_region_count);
+    }
+  }
 }
