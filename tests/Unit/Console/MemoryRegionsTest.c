@@ -85,7 +85,7 @@ void test_physical_memory_regions_rejects_zero_sized_region(void) {
                           sizeof(reg_bytes));
 
   TEST_ASSERT_EQUAL_size_t(1, g_panic_calls);
-  TEST_ASSERT_EQUAL_STRING("Physical memory region reported with zero size",
+  TEST_ASSERT_EQUAL_STRING("Memory region reported with zero size",
                            g_last_panic_message);
 }
 

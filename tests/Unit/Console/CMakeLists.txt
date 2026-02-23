@@ -125,6 +125,43 @@ if(COMMAND add_host_unity_test)
       ${CMAKE_SOURCE_DIR}/kernel/Hardware/Endian.h)
 
   add_host_unity_test(
+    NAME unit-memory-get-regions
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/MemoryGetRegionsTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.h
+      ${CMAKE_SOURCE_DIR}/kernel/Panic/Panic.h
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
+      ${CMAKE_SOURCE_DIR}/kernel/Hardware/Endian.h)
+
+  add_host_unity_test(
+    NAME unit-memory-region-ops
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/MemoryRegionOpsTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.h
+      ${CMAKE_SOURCE_DIR}/kernel/Panic/Panic.h
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h
+      ${CMAKE_SOURCE_DIR}/kernel/Hardware/Endian.h)
+
+  add_host_unity_test(
+    NAME unit-device-tree-parse
+    SOURCES
+      ${CMAKE_SOURCE_DIR}/tests/Unit/Console/DeviceTreeParseTest.c
+      ${CMAKE_SOURCE_DIR}/kernel/Hardware/DeviceTree.c
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.c
+      ${CMAKE_SOURCE_DIR}/kernel/String/String.c
+    DEPENDS
+      ${CMAKE_SOURCE_DIR}/kernel/Hardware/DeviceTree.h
+      ${CMAKE_SOURCE_DIR}/kernel/Hardware/Endian.h
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.h
+      ${CMAKE_SOURCE_DIR}/kernel/String/String.h
+      ${CMAKE_SOURCE_DIR}/kernel/Panic/Panic.h
+      ${CMAKE_SOURCE_DIR}/kernel/Console/IO.h)
+
+  add_host_unity_test(
     NAME unit-uptime
     SOURCES
       ${CMAKE_SOURCE_DIR}/tests/Unit/Console/UptimeTest.c

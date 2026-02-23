@@ -304,8 +304,8 @@ void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
           out_memory_regions[i].size = (size_t)(end_i_plus_1 - start_i);
         }
 
-        // Shift other regions left and decrement region count
-        for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
+        // Remove i+1 while preserving i (already merged).
+        for (size_t j = i + 2; j < *out_memory_region_count; ++j) {
           out_memory_regions[j - 1] = out_memory_regions[j];
         }
         --(*out_memory_region_count);
