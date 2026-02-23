@@ -2,7 +2,6 @@
 // See LICENSE.txt for details.
 
 #include "kernel/Console/IO.h"
-#include "kernel/Hardware/DeviceTree.h"
 #include "kernel/Hardware/Endian.h"
 #include "kernel/Memory/Memory.h"
 #include "kernel/Panic/Panic.h"
@@ -16,6 +15,11 @@ void get_memory_regions(struct MemoryRegion* out_memory_regions,
                         size_t* out_memory_region_count,
                         const uint32_t address_cells, const uint32_t size_cells,
                         const void* reg_bytes, const size_t reg_size) {
+  if (out_memory_regions == NULL || out_memory_region_count == NULL ||
+      reg_bytes == NULL) {
+    kernel_panic("Null pointer passed to get_memory_regions");
+    return;
+  }
   // Sanity checks on sizes
   if ((address_cells > reg_size) || (size_cells > reg_size)) {
     kernel_panic(
@@ -55,8 +59,12 @@ void get_memory_regions(struct MemoryRegion* out_memory_regions,
         "multiple of region sizes");
     return;
   }
-  if ((*out_memory_region_count + number_of_regions_specified) >
-      MAX_MEMORY_REGIONS) {
+  if (number_of_regions_specified > MAX_MEMORY_REGIONS) {
+    kernel_panic("Too many memory regions in get_memory_regions");
+    return;
+  }
+  if (*out_memory_region_count >
+      (MAX_MEMORY_REGIONS - number_of_regions_specified)) {
     kernel_panic("Max number of memory regions exceeded");
     return;
   }
@@ -118,14 +126,14 @@ void get_memory_regions(struct MemoryRegion* out_memory_regions,
 void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
                               size_t* out_memory_region_count,
                               const bool expand_to_page_size) {
-  // If the array is empty, do nothing
-  if (out_memory_region_count == 0) {
+  // If any pointer passed in is NULL, panic
+  if (out_memory_regions == NULL || out_memory_region_count == NULL) {
+    kernel_panic("Null pointer passed to normalize_memory_regions");
     return;
   }
 
-  // If array pointer is NULL, panic
-  if (out_memory_regions == NULL) {
-    kernel_panic("Null pointer passed to normalize_memory_regions");
+  // If the array is empty, do nothing
+  if (*out_memory_region_count == 0) {
     return;
   }
 
@@ -133,17 +141,25 @@ void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
   // removed, all regions at higher index are shifted left by one
   // (i.e., their indices decrease by one), and out_memory_region_count
   // decreases by one.
-  for (size_t i = 0; i < *out_memory_region_count; ++i) {
-    if (out_memory_regions[i].size == 0) {
-      // Shift remaining elements left 1
-      for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
-        out_memory_regions[j - 1] = out_memory_regions[j];
+  {
+    size_t i = 0;
+    while (i < *out_memory_region_count) {
+      if (out_memory_regions[i].size == 0) {
+        // Shift remaining elements left 1
+        for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
+          out_memory_regions[j - 1] = out_memory_regions[j];
+        }
+        --(*out_memory_region_count);
+        // If no regions remain, return ... array contained only zero-size
+        // regions
+        if (*out_memory_region_count == 0) {
+          return;
+        }
+        // Need to check region again, since the ith region is different now.
+        // Don't increment i
+        continue;
       }
-      --(*out_memory_region_count);
-      // If no regions remain, return ... array contained only zero-size regions
-      if (*out_memory_region_count == 0) {
-        return;
-      }
+      ++i;
     }
   }
 
@@ -153,23 +169,89 @@ void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
   for (size_t i = 0; i < *out_memory_region_count; ++i) {
     const size_t start_mod_page_size =
         out_memory_regions[i].base_address % PAGE_SIZE_BYTES;
+    // Before adding base + size, check for overflow: base + size > SIZE_MAX,
+    // but to avoid overflow, write as base > SIZE_MAX - size
+    if (out_memory_regions[i].base_address >
+        (UINTPTR_MAX - out_memory_regions[i].size)) {
+      kernel_panic(
+          "Overflow when adding base + size when normalizing memory regions");
+      return;
+    }
     const size_t end_mod_page_size =
         (out_memory_regions[i].base_address + out_memory_regions[i].size) %
         PAGE_SIZE_BYTES;
     if (start_mod_page_size) {
       if (expand_to_page_size) {
         out_memory_regions[i].base_address -= start_mod_page_size;
+        // No need to check for underflow above, because mod can't underflow
+        // But check for overflow here
+        if (out_memory_regions[i].size > SIZE_MAX - start_mod_page_size) {
+          kernel_panic(
+              "Overflow when increasing memory region size in "
+              "normalize_memory_regions");
+          return;
+        }
+        out_memory_regions[i].size += start_mod_page_size;
       } else {
+        if (out_memory_regions[i].base_address >
+            UINTPTR_MAX - (PAGE_SIZE_BYTES - start_mod_page_size)) {
+          kernel_panic(
+              "Overflow when contracting memory region in "
+              "normalize_memory_regions");
+          return;
+        }
         out_memory_regions[i].base_address +=
             (PAGE_SIZE_BYTES - start_mod_page_size);
+        if (out_memory_regions[i].size >=
+            (PAGE_SIZE_BYTES - start_mod_page_size)) {
+          out_memory_regions[i].size -= (PAGE_SIZE_BYTES - start_mod_page_size);
+        } else {
+          out_memory_regions[i].size = 0;
+        }
       }
     }
     if (end_mod_page_size) {
       if (expand_to_page_size) {
+        if (out_memory_regions[i].size >
+            SIZE_MAX - (PAGE_SIZE_BYTES - end_mod_page_size)) {
+          kernel_panic("Overflow adjusting end in normalize_memory_regions");
+          return;
+        }
         out_memory_regions[i].size += (PAGE_SIZE_BYTES - end_mod_page_size);
       } else {
-        out_memory_regions[i].size -= end_mod_page_size;
+        if (out_memory_regions[i].size >= end_mod_page_size) {
+          out_memory_regions[i].size -= end_mod_page_size;
+        } else {
+          out_memory_regions[i].size = 0;
+        }
       }
+    }
+  }
+
+  // Once again, remove empty regions
+  // Loop over regions, removing any regions of zero size. If a region is
+  // removed, all regions at higher index are shifted left by one
+  // (i.e., their indices decrease by one), and out_memory_region_count
+  // decreases by one.
+  {
+    size_t i = 0;
+    while (i < *out_memory_region_count) {
+      if (out_memory_regions[i].size == 0) {
+        // Shift remaining elements left 1
+        for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
+          out_memory_regions[j - 1] = out_memory_regions[j];
+        }
+        --(*out_memory_region_count);
+        // If no regions remain, return ... array contained only zero-size
+        // regions
+        if (*out_memory_region_count == 0) {
+          return;
+        }
+        // Need to check region again, since the ith region is different now.
+        // Don't increment i
+        continue;
+      }
+      ++i;
     }
   }
 
@@ -197,22 +279,42 @@ void normalize_memory_regions(struct MemoryRegion* out_memory_regions,
   // check if base + size extends beyond next region's base address. If it does,
   // extend the size to reach to the end of the next region, and remove the
   // next region, left-shifting regions beyond that by one.
-  for (size_t i = 0; i < (*out_memory_region_count - 1); ++i) {
-    uintptr_t start_i = out_memory_regions[i].base_address;
-    uintptr_t end_i = start_i + out_memory_regions[i].size;
-    uintptr_t start_i_plus_1 = out_memory_regions[i + 1].base_address;
-    uintptr_t end_i_plus_1 = start_i_plus_1 + out_memory_regions[i + 1].size;
-    if (end_i >= start_i_plus_1) {
-      // Merge the regions: end is now max(end[i], end[i+1])
-      if (end_i_plus_1 > end_i) {
-        out_memory_regions[i].size = (size_t)(end_i_plus_1 - start_i);
+  {
+    size_t i = 0;
+    while (i < (*out_memory_region_count - 1)) {
+      uintptr_t start_i = out_memory_regions[i].base_address;
+      if (out_memory_regions[i].base_address >
+          UINTPTR_MAX - out_memory_regions[i].size) {
+        kernel_panic(
+            "ith memory region overflow when adding base + size in "
+            "normalize_memory_regions");
+        return;
       }
+      uintptr_t end_i = start_i + out_memory_regions[i].size;
+      uintptr_t start_i_plus_1 = out_memory_regions[i + 1].base_address;
+      if (out_memory_regions[i + 1].base_address >
+          UINTPTR_MAX - out_memory_regions[i + 1].size) {
+        kernel_panic("i+1th region overflow in normalize_memory_regions");
+        return;
+      }
+      uintptr_t end_i_plus_1 = start_i_plus_1 + out_memory_regions[i + 1].size;
+      if (end_i >= start_i_plus_1) {
+        // Merge the regions: end is now max(end[i], end[i+1])
+        if (end_i_plus_1 > end_i) {
+          out_memory_regions[i].size = (size_t)(end_i_plus_1 - start_i);
+        }
 
-      // Shift other regions left and decrement region count
-      for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
-        out_memory_regions[j - 1] = out_memory_regions[j];
+        // Shift other regions left and decrement region count
+        for (size_t j = i + 1; j < *out_memory_region_count; ++j) {
+          out_memory_regions[j - 1] = out_memory_regions[j];
+        }
+        --(*out_memory_region_count);
+        // The "ith" element is now different than before, becaue of the merge
+        // So need to check case i again. Don't increment i, just go to next
+        // iteration in the loop.
+        continue;
       }
-      --(*out_memory_region_count);
+      ++i;
     }
   }
 }
@@ -222,17 +324,42 @@ void remove_reserved_memory_regions(
     size_t* physical_memory_region_count,
     struct MemoryRegion* reserved_memory_regions,
     size_t* reserved_memory_region_count) {
+  if (physical_memory_regions == NULL || reserved_memory_regions == NULL ||
+      physical_memory_region_count == NULL ||
+      reserved_memory_region_count == NULL) {
+    kernel_panic("Null pointer passed to remove_reserved_memory_regions");
+    return;
+  }
+
+  if (*physical_memory_region_count == 0) {
+    // There are no physical regions to normalize, so just return;
+    return;
+  }
+  if (*reserved_memory_region_count == 0) {
+    // There are no reserved regions to normalize, so just return;
+    return;
+  }
+
   normalize_memory_regions(physical_memory_regions,
                            physical_memory_region_count, false);
   normalize_memory_regions(reserved_memory_regions,
                            reserved_memory_region_count, true);
 
   for (size_t i = 0; i < *physical_memory_region_count; ++i) {
-    uintptr_t phys_start = physical_memory_regions[i].base_address;
-    uintptr_t phys_end = phys_start + physical_memory_regions[i].size;
-
     for (size_t j = 0; j < *reserved_memory_region_count; ++j) {
+      uintptr_t phys_start = physical_memory_regions[i].base_address;
+      if (phys_start > UINTPTR_MAX - physical_memory_regions[i].size) {
+        kernel_panic(
+            "Overflow in phys region before removing reserved regions");
+        return;
+      }
+      uintptr_t phys_end = phys_start + physical_memory_regions[i].size;
       uintptr_t res_start = reserved_memory_regions[j].base_address;
+      if (res_start > UINTPTR_MAX - reserved_memory_regions[j].size) {
+        kernel_panic(
+            "Overflow in reserved region before removing reserved regions");
+        return;
+      }
       uintptr_t res_end = res_start + reserved_memory_regions[j].size;
       if (phys_start >= res_start && phys_start < res_end &&
           phys_end <= res_end && phys_end > res_start) {
@@ -242,7 +369,7 @@ void remove_reserved_memory_regions(
         physical_memory_regions[i].size = 0;
         // No need to continue checking against reserved regions; this
         // physical region has been eliminated
-        continue;
+        break;
       } else if (phys_start >= res_start && phys_start < res_end) {
         // phys_end > res_end to get here
         // Trim start: phys_start -> res_end
@@ -254,7 +381,7 @@ void remove_reserved_memory_regions(
         physical_memory_regions[i].size = res_start - phys_start;
       } else if (phys_start < res_start && phys_end > res_end) {
         // Split
-        if (*physical_memory_region_count + 1 >= MAX_MEMORY_REGIONS) {
+        if (*physical_memory_region_count + 1 > MAX_MEMORY_REGIONS) {
           kernel_panic(
               "Cannot split memory region to account for reserved region: all "
               "memory regions already used");
