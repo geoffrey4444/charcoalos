@@ -101,6 +101,7 @@ if(COMMAND add_host_unity_test)
     SOURCES
       ${CMAKE_SOURCE_DIR}/tests/Unit/Console/LifecyclePanicRestartTest.c
       ${CMAKE_SOURCE_DIR}/kernel/Main/Lifecycle.c
+      ${CMAKE_SOURCE_DIR}/kernel/Memory/Memory.c
       ${CMAKE_SOURCE_DIR}/kernel/Panic/Panic.c
       ${CMAKE_SOURCE_DIR}/kernel/Panic/Restart.c
     DEPENDS

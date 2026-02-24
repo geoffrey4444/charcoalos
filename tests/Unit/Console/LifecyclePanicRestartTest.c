@@ -97,6 +97,8 @@ void test_kernel_init_prints_welcome_message(void) {
       "Initializing timer... done.\n"
       "Parsing device tree blob for hardware information...\n"
       "Device table blob recognized with magic EDFE0DD0\n"
+      "Removing reserved regions from memory...\n"
+      "Total allocatable memory (bytes): 0x0000000000000000\n"
       "\n"
       "Welcome to CharcoalOS.\n",
       g_tx_buffer);

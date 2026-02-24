@@ -110,7 +110,7 @@ void parse_device_tree_blob(struct HardwareInfo *out_hw_info, uintptr_t dtb) {
   uint64_t start, end;
   out_hw_info->reserved_memory_regions_count = 0;
   while (true) {
-    if (i >= 255) {
+    if (i >= MAX_MEMORY_REGIONS) {
       kernel_panic("Insufficient space to store reserved memory regions");
       return;
     }
