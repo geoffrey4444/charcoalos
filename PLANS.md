@@ -167,20 +167,38 @@ Decision:
    - general-purpose DT framework features not needed by current milestones.
 
 3.2. Reserve regions before allocator init
-1. Build a simple "physical memory map" table with entries marked `USABLE` or `RESERVED`.
-2. Reserve:
+1. Define PMM (Physical Memory Manager) reserve contract first:
+   - `pmm_reserve_range(pa_start, pa_end, reason)` is the canonical reservation API.
+   - `reason` type: use an enum (`enum pmm_reserve_reason`), not a string; add a helper to map enum to string for logs.
+   - It must be valid before full allocator init; pre-init calls are recorded in a small fixed reservation log.
+   - Implementation choice for pre-init storage: static array is sufficient (for example, `MAX_EARLY_RESERVATIONS=16`) with append-only entries and a count; no runtime queue data structure is required.
+   - At `pmm_init`, replay queued reservations into final PMM state.
+   - `reason` is required in Phase 3.2 now (do not ignore): validate non-invalid reason values, store reason in early reservation records, include reason in diagnostics, and carry reason through replay.
+   - `reason` is also used later for `struct page.flags` classification (kernel image, stack, DTB, MMIO, PMM metadata, etc.).
+2. Bootstrap PMM metadata placement before allocator is active:
+   - using RAM + known reserved inputs, find a safe contiguous range for bitmap and optional `struct page[]`,
+   - bitmap sizing rule: `1 bit` per managed 4 KiB page frame in PMM-visible RAM (size is based on total managed frames, not only currently free frames),
+   - `struct page` sizing rule (initial plan): 3x `uint64_t` (`flags`, `refcount`, `order_or_next`) = `24 bytes` per managed page frame,
+   - note: `struct page` is metadata per physical page frame, not per page-table entry,
+   - reserve that metadata range as non-allocatable before exposing allocator APIs.
+3. Add common linker symbol contract across `platform/virt/linker.ld` and `platform/rpi/linker.ld`:
+   - required symbols: `__kernel_image_start`, `__kernel_image_end`, `__stack_bottom`, `__stack_top`,
+   - keep existing section symbols and standardize names where needed: `__text_start`, `__text_end`, `__rodata_start`, `__rodata_end`, `__data_start`, `__data_end`, `__bss_start`, `__bss_end`,
+   - use these symbols from kernel PMM bootstrap code so reservation logic stays platform-independent.
+4. Reserve:
    - kernel image range (`.text/.rodata/.data/.bss`) via linker symbols,
    - boot/kernel stack range via linker symbols,
    - MMIO windows (from platform constants and/or DTB ranges),
    - DTB blob itself,
    - allocator metadata memory (bitmap + page descriptors).
-3. Keep this reserve API explicit (for example, `pmm_reserve_range(pa_start, pa_end, reason)`), because later phases will reuse it for ELF/user mappings and DMA-safe reservations.
+5. Keep reservation ownership in PMM state (not in `hardware_info`), because later phases will reuse the same API for ELF/user mappings, DMA-safe carveouts, and page-table safety rules.
 
 3.3. Allocator choice and data structures
 1. Use a bitmap page-frame allocator now (best minimal base for performance + total-RAM scalability):
    - 1 bit per 4 KiB page frame (`0=free`, `1=used`),
    - allocation scan with "next-fit cursor" to avoid always scanning from page 0,
    - deterministic O(n/word) worst-case scan, very small metadata.
+   - init sequence: mark all frames used, mark discovered usable RAM free, then replay/apply all PMM reservations back to used.
 2. Add a minimal per-page metadata array (`struct page`) now so later phases do not require a rewrite:
    - `flags` (reserved/kernel/table/etc.),
    - `refcount` (for shared mappings/COW groundwork),
@@ -189,7 +207,7 @@ Decision:
    - `pmm_alloc_page()`,
    - `pmm_free_page(pa)`,
    - `pmm_alloc_pages(count)` (contiguous, first-fit; can be slow initially),
-   - `pmm_mark_used(pa, size)` for reservation plumbing.
+   - keep `pmm_reserve_range(pa_start, pa_end, reason)` as reservation plumbing API (it updates bitmap/page flags once PMM is initialized).
 
 3.4. Tests for Phase 3
 1. Unit-test range normalize/reserve overlap behavior.
