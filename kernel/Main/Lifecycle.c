@@ -7,7 +7,7 @@
 #include "kernel/Console/Shell.h"
 #include "kernel/Main/Lifecycle.h"
 #include "kernel/Hardware/DeviceTree.h"
-#include "kernel/Panic/Panic.h"
+#include "kernel/Memory/Memory.h"
 
 #include <stddef.h>
 
@@ -30,6 +30,14 @@ void kernel_init(uintptr_t dtb) {
   static struct HardwareInfo hw_info = {0};
   parse_device_tree_blob(&hw_info, dtb);
 
+  console_print("Removing reserved regions from memory...\n");
+  remove_reserved_memory_regions(hw_info.physical_memory_regions,
+                                 &(hw_info.physical_memory_region_count),
+                                 hw_info.reserved_memory_regions,
+                                 &(hw_info.reserved_memory_regions_count));
+  uint64_t total_allocatable_memory = get_total_memory_size(
+      hw_info.physical_memory_regions, hw_info.physical_memory_region_count);  
+
   for (size_t i = 0; i < hw_info.physical_memory_region_count; ++i) {
     console_print("Physical memory region at base address 0x");
     console_print_hex_value(
@@ -50,6 +58,9 @@ void kernel_init(uintptr_t dtb) {
                             sizeof(size_t));
     console_print(" bytes\n");
   }
+  console_print("Total allocatable memory (bytes): 0x");
+  console_print_hex_value((void *)&total_allocatable_memory, 8);
+  console_print("\n");
 
   console_print("\nWelcome to CharcoalOS.\n");
 
