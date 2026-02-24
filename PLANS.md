@@ -291,11 +291,19 @@ Goal:
    - re-enable walks for TTBR0 (`EPD0=0`) only when first EL0 program path is ready.
 3. Ensure kernel pages are inaccessible to EL0 (`AP`/`PXN`/`UXN` settings) from day one.
 
+4.6. Kernel heap allocator (`kmalloc`/`kfree`)
+1. Place `kmalloc`/`kfree` after Phase 3 PMM is stable and after Phase 4 kernel virtual mappings are stable.
+2. Define a kernel heap VA range in high-half and back it with PMM pages on demand.
+3. Start with a simple allocator policy (for example, size classes or first-fit blocks), then iterate later if fragmentation becomes measurable.
+4. Keep a minimal early-boot bump allocator only if needed before full heap is live; retire or strictly limit it once `kmalloc` is available.
+5. Keep `kmalloc` strictly layered above PMM (`pmm_alloc_page/pmm_free_page`) so physical page ownership remains centralized.
+
 Exit criteria:
 - EL1 runs stably in high-half virtual space with MMU enabled.
 - Kernel permissions are enforced (`.text` RO+X, writable regions NX, MMIO device attributes).
 - Fault diagnostics show actionable `ESR_EL1` + `FAR_EL1` output.
 - TTBR0/user mappings are structurally prepared but user allocation policy remains deferred to Phase 5 entry.
+- Kernel heap (`kmalloc`/`kfree`) is available for kernel dynamic allocations and is backed by PMM-managed pages.
 
 ## Phase 5: EL0 Entry + Minimal Syscall ABI
 
